@@ -1,0 +1,41 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node.js
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# NuGet
+*.nupkg
+packages/
