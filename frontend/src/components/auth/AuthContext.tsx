@@ -2,6 +2,14 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
+function setAuthCookie(token: string) {
+  document.cookie = `auth-token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+}
+
+function removeAuthCookie() {
+  document.cookie = 'auth-token=; path=/; max-age=0';
+}
+
 interface User {
   id: string;
   email: string;
@@ -61,9 +69,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (decoded) {
         setToken(stored);
         setUser(decoded);
+        setAuthCookie(stored);
       } else {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
+        removeAuthCookie();
       }
     }
     setIsLoading(false);
@@ -95,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     localStorage.setItem('token', accessToken);
+    setAuthCookie(accessToken);
     if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
 
     const decoded = decodeJWT(accessToken);
@@ -105,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
+    removeAuthCookie();
     setToken(null);
     setUser(null);
     window.location.href = '/';
