@@ -2,14 +2,14 @@
 
 import { AuthProvider, useAuth } from '../../../../components/auth/AuthContext';
 import DashboardLayout from '../../../../components/dashboard/DashboardLayout';
-import PatientDetails from '../../../../components/patients/PatientDetails';
+import AppointmentDetails from '../../../../components/appointments/AppointmentDetails';
 import AccessDenied from '../../../../components/common/AccessDenied';
 import { useParams } from 'next/navigation';
 
-function PatientDetailContent() {
+function AppointmentDetailContent() {
   const { user } = useAuth();
   const params = useParams();
-  const patientId = params.id as string;
+  const appointmentId = params.id as string;
 
   if (user?.role === 'Patient') {
     return <AccessDenied />;
@@ -17,18 +17,24 @@ function PatientDetailContent() {
 
   const canEdit = user?.role === 'Admin' || user?.role === 'Reception';
   const canDelete = user?.role === 'Admin';
+  const canUpdateStatus = user?.role === 'Admin' || user?.role === 'Doctor' || user?.role === 'Reception';
 
   return (
     <DashboardLayout>
-      <PatientDetails patientId={patientId} canEdit={canEdit} canDelete={canDelete} />
+      <AppointmentDetails
+        appointmentId={appointmentId}
+        canEdit={canEdit}
+        canDelete={canDelete}
+        canUpdateStatus={canUpdateStatus}
+      />
     </DashboardLayout>
   );
 }
 
-export default function PatientDetailPage() {
+export default function AppointmentDetailPage() {
   return (
     <AuthProvider>
-      <PatientDetailContent />
+      <AppointmentDetailContent />
     </AuthProvider>
   );
 }

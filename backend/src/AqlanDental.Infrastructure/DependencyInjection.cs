@@ -38,6 +38,8 @@ public static class DependencyInjection
         services.AddScoped<IHealthCheckService, HealthCheckService>();
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IDoctorService, DoctorService>();
+        services.AddScoped<IAppointmentService, AppointmentService>();
+        services.AddScoped<IBookingRequestService, BookingRequestService>();
         services.AddScoped<InitialSeeder>();
 
         return services;

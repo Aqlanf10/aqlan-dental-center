@@ -17,6 +17,8 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ClinicSettings> ClinicSettings => Set<ClinicSettings>();
     public DbSet<Patient> Patients => Set<Patient>();
     public DbSet<Doctor> Doctors => Set<Doctor>();
+    public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<BookingRequest> BookingRequests => Set<BookingRequest>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -69,6 +71,59 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Email).HasMaxLength(200);
             entity.Property(e => e.Color).HasMaxLength(7);
             entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<Appointment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ServiceType).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.AppointmentDate);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<BookingRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PatientName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.PhoneNumber).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.ServiceType).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+            entity.Property(e => e.Status).IsRequired();
+
+            entity.HasOne(e => e.PreferredDoctor)
+                .WithMany()
+                .HasForeignKey(e => e.PreferredDoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.LinkedPatient)
+                .WithMany()
+                .HasForeignKey(e => e.LinkedPatientId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ConvertedAppointment)
+                .WithMany()
+                .HasForeignKey(e => e.ConvertedAppointmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.PhoneNumber);
         });
 
         SeedDefaultClinicSettings(builder);
