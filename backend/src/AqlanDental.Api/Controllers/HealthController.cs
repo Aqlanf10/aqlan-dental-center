@@ -1,7 +1,6 @@
-using AqlanDental.Infrastructure.Persistence;
+using AqlanDental.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace AqlanDental.Api.Controllers;
 
@@ -9,42 +8,21 @@ namespace AqlanDental.Api.Controllers;
 [Route("api/[controller]")]
 public class HealthController : ControllerBase
 {
-    private readonly AqlanDentalDbContext _context;
+    private readonly IHealthCheckService _healthCheckService;
 
-    public HealthController(AqlanDentalDbContext context)
+    public HealthController(IHealthCheckService healthCheckService)
     {
-        _context = context;
+        _healthCheckService = healthCheckService;
     }
 
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult> Get()
     {
-        var dbConnected = await CheckDatabaseConnectionAsync();
+        var result = await _healthCheckService.CheckHealthAsync();
 
-        var result = new
-        {
-            Status = dbConnected ? "Healthy" : "Degraded",
-            Timestamp = DateTime.UtcNow,
-            Version = "1.0.0",
-            Services = new
-            {
-                Database = dbConnected ? "Connected" : "Disconnected"
-            }
-        };
-
-        return dbConnected ? Ok(result) : StatusCode(503, result);
-    }
-
-    private async Task<bool> CheckDatabaseConnectionAsync()
-    {
-        try
-        {
-            return await _context.Database.CanConnectAsync();
-        }
-        catch
-        {
-            return false;
-        }
+        return result.Status == "Healthy"
+            ? Ok(result)
+            : StatusCode(503, result);
     }
 }

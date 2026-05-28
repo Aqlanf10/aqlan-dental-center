@@ -16,6 +16,9 @@ public static class ServiceCollectionExtensions
         services.AddApplication();
         services.AddInfrastructure(configuration);
 
+        services.AddControllers();
+        services.AddEndpointsApiExplorer();
+
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

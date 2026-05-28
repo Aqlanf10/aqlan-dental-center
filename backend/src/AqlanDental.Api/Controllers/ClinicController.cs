@@ -1,7 +1,6 @@
-using AqlanDental.Infrastructure.Persistence;
+using AqlanDental.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace AqlanDental.Api.Controllers;
 
@@ -9,34 +8,24 @@ namespace AqlanDental.Api.Controllers;
 [Route("api/clinic")]
 public class ClinicController : ControllerBase
 {
-    private readonly AqlanDentalDbContext _context;
+    private readonly IClinicSettingsService _clinicSettingsService;
 
-    public ClinicController(AqlanDentalDbContext context)
+    public ClinicController(IClinicSettingsService clinicSettingsService)
     {
-        _context = context;
+        _clinicSettingsService = clinicSettingsService;
     }
 
     [HttpGet("settings")]
     [AllowAnonymous]
     public async Task<ActionResult> GetSettings()
     {
-        var settings = await _context.ClinicSettings.FirstOrDefaultAsync();
+        var settings = await _clinicSettingsService.GetSettingsAsync();
 
         if (settings is null)
         {
             return NotFound(new { Message = "إعدادات العيادة غير موجودة" });
         }
 
-        return Ok(new
-        {
-            settings.Id,
-            settings.ClinicNameAr,
-            settings.ClinicNameEn,
-            settings.PhoneNumber,
-            settings.Address,
-            settings.LogoUrl,
-            settings.CurrencyDefault,
-            settings.UpdatedAt
-        });
+        return Ok(settings);
     }
 }

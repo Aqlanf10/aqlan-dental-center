@@ -34,6 +34,8 @@ public static class DependencyInjection
 
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IClinicSettingsService, ClinicSettingsService>();
+        services.AddScoped<IHealthCheckService, HealthCheckService>();
         services.AddScoped<InitialSeeder>();
 
         return services;
