@@ -36,6 +36,23 @@ public class PatientsController : ControllerBase
         return Ok(patient);
     }
 
+    [HttpGet("{id:guid}/summary")]
+    [Authorize(Policy = "PatientRead")]
+    public async Task<ActionResult<PatientSummaryDto>> GetPatientSummary(Guid id)
+    {
+        var summary = await _patientService.GetPatientSummaryAsync(id);
+        if (summary is null) return NotFound(new { message = "المريض غير موجود" });
+        return Ok(summary);
+    }
+
+    [HttpGet("{id:guid}/timeline")]
+    [Authorize(Policy = "PatientRead")]
+    public async Task<ActionResult<PatientTimelineDto>> GetPatientTimeline(Guid id)
+    {
+        var timeline = await _patientService.GetPatientTimelineAsync(id);
+        return Ok(timeline);
+    }
+
     [HttpPost]
     [Authorize(Policy = "PatientWrite")]
     public async Task<ActionResult<PatientDto>> CreatePatient(CreatePatientRequest request)

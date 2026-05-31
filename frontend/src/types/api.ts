@@ -494,3 +494,107 @@ export interface UpdateClinicalProcedureRequest {
 export interface UpdateClinicalProcedureStatusRequest {
   status: number;
 }
+
+// Public Clinic Display
+export interface PublicDisplayQueueItemDto {
+  queueNumber: number;
+  patientDisplayName: string;
+  patientNumber: string | null;
+  roomName: string | null;
+  status: number;
+  statusDisplay: string;
+  priority: number;
+  calledAt: string | null;
+}
+
+export interface PublicClinicDisplayDto {
+  clinicName: string;
+  date: string;
+  waitingCount: number;
+  calledCount: number;
+  inRoomCount: number;
+  completedCount: number;
+  currentlyCalled: PublicDisplayQueueItemDto | null;
+  queueItems: PublicDisplayQueueItemDto[];
+}
+
+// Patient Summary
+export interface PrescriptionSummaryDto {
+  id: string;
+  medicationName: string;
+  dosage: string | null;
+  frequency: string | null;
+  duration: string | null;
+  createdAt: string;
+}
+
+export interface PatientSummaryDto {
+  patient: PatientDto;
+  lastAppointment: AppointmentDto | null;
+  lastClinicalVisit: ClinicalVisitDto | null;
+  totalClinicalVisits: number;
+  latestProcedures: ClinicalProcedureDto[];
+  latestPrescriptions: PrescriptionSummaryDto[];
+}
+
+export interface TimelineEntryDto {
+  type: string;
+  id: string;
+  title: string;
+  subtitle: string | null;
+  date: string;
+  statusDisplay: string | null;
+}
+
+export interface PatientTimelineDto {
+  entries: TimelineEntryDto[];
+}
+
+// Doctor Weekly Schedule
+export interface DoctorWeeklyScheduleDto {
+  id: string;
+  doctorId: string;
+  doctorName: string;
+  dayOfWeek: number;
+  dayOfWeekDisplay: string;
+  startTime: string;
+  endTime: string;
+  breakStartTime: string | null;
+  breakEndTime: string | null;
+  defaultAppointmentDurationMinutes: number;
+  isAvailableForBooking: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDoctorWeeklyScheduleRequest {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  breakStartTime?: string | null;
+  breakEndTime?: string | null;
+  defaultAppointmentDurationMinutes?: number;
+  isAvailableForBooking?: boolean;
+}
+
+export interface UpdateDoctorWeeklyScheduleRequest {
+  startTime?: string | null;
+  endTime?: string | null;
+  breakStartTime?: string | null;
+  breakEndTime?: string | null;
+  defaultAppointmentDurationMinutes?: number | null;
+  isAvailableForBooking?: boolean | null;
+}
+
+export interface AvailableDoctorDto {
+  doctorId: string;
+  doctorName: string;
+  specialty: string;
+  color: string | null;
+  startTime: string;
+  endTime: string;
+  breakStartTime: string | null;
+  breakEndTime: string | null;
+  defaultAppointmentDurationMinutes: number;
+}

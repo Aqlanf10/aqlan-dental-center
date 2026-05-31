@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/', '/booking'];
+  const publicRoutes = ['/', '/booking', '/clinic-display'];
   const isPublicRoute = publicRoutes.some(route => pathname === route);
 
   // Check for auth token cookie

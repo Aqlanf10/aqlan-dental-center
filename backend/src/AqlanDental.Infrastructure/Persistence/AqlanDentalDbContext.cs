@@ -25,6 +25,7 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ClinicalVisit> ClinicalVisits => Set<ClinicalVisit>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
     public DbSet<ClinicalProcedure> ClinicalProcedures => Set<ClinicalProcedure>();
+    public DbSet<DoctorWeeklySchedule> DoctorWeeklySchedules => Set<DoctorWeeklySchedule>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -325,6 +326,26 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.ProcedureType);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<DoctorWeeklySchedule>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DayOfWeek).IsRequired();
+            entity.Property(e => e.StartTime).IsRequired();
+            entity.Property(e => e.EndTime).IsRequired();
+            entity.Property(e => e.DefaultAppointmentDurationMinutes).IsRequired();
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.DayOfWeek);
+            entity.HasIndex(e => e.IsAvailableForBooking);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => new { e.DoctorId, e.DayOfWeek, e.IsActive });
         });
 
         SeedDefaultClinicSettings(builder);

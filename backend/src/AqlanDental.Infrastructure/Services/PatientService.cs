@@ -1,5 +1,6 @@
 using AqlanDental.Application.Common.Interfaces;
 using AqlanDental.Application.Common.Models;
+using AqlanDental.Application.Common.Utilities;
 using AqlanDental.Domain.Entities;
 using AqlanDental.Domain.Exceptions;
 using AqlanDental.Infrastructure.Persistence;
@@ -92,6 +93,12 @@ public class PatientService : IPatientService
         if (string.IsNullOrWhiteSpace(request.PhoneNumber))
             throw new DomainException("PATIENT_PHONE_REQUIRED", "رقم هاتف المريض مطلوب");
 
+        // Normalize phone numbers
+        var normalizedPhone = PhoneNormalizer.Normalize(request.PhoneNumber);
+        var normalizedWhatsApp = !string.IsNullOrWhiteSpace(request.WhatsAppNumber)
+            ? PhoneNormalizer.Normalize(request.WhatsAppNumber)
+            : null;
+
         // Generate PatientNumber
         var maxNumber = await _context.Patients
             .Where(p => p.PatientNumber.StartsWith("P-"))
@@ -120,8 +127,8 @@ public class PatientService : IPatientService
             FullName = request.FullName,
             Gender = (Gender)request.Gender,
             DateOfBirth = request.DateOfBirth,
-            PhoneNumber = request.PhoneNumber,
-            WhatsAppNumber = request.WhatsAppNumber,
+            PhoneNumber = normalizedPhone,
+            WhatsAppNumber = normalizedWhatsApp,
             Address = request.Address,
             Notes = request.Notes,
             IsActive = true,
@@ -164,11 +171,17 @@ public class PatientService : IPatientService
         if (patient is null || !patient.IsActive)
             return null;
 
+        // Normalize phone numbers
+        var normalizedPhone = PhoneNormalizer.Normalize(request.PhoneNumber);
+        var normalizedWhatsApp = !string.IsNullOrWhiteSpace(request.WhatsAppNumber)
+            ? PhoneNormalizer.Normalize(request.WhatsAppNumber)
+            : null;
+
         patient.FullName = request.FullName;
         patient.Gender = (Gender)request.Gender;
         patient.DateOfBirth = request.DateOfBirth;
-        patient.PhoneNumber = request.PhoneNumber;
-        patient.WhatsAppNumber = request.WhatsAppNumber;
+        patient.PhoneNumber = normalizedPhone;
+        patient.WhatsAppNumber = normalizedWhatsApp;
         patient.Address = request.Address;
         patient.Notes = request.Notes;
         patient.UpdatedAt = DateTime.UtcNow;
@@ -207,4 +220,203 @@ public class PatientService : IPatientService
 
         return true;
     }
+
+    public async Task<PatientSummaryDto?> GetPatientSummaryAsync(Guid id)
+    {
+        var patient = await _context.Patients.FindAsync(id);
+        if (patient is null) return null;
+
+        var patientDto = MapPatientToDto(patient);
+
+        // Last appointment
+        var lastAppointment = await _context.Appointments
+            .Where(a => a.PatientId == id && a.IsActive)
+            .OrderByDescending(a => a.AppointmentDate)
+            .FirstOrDefaultAsync();
+        var lastAppointmentDto = lastAppointment is not null ? MapAppointmentToDto(lastAppointment) : null;
+
+        // Clinical visits
+        var clinicalVisits = await _context.ClinicalVisits
+            .Include(v => v.Prescriptions)
+            .Include(v => v.Procedures)
+            .Where(v => v.PatientId == id && v.IsActive)
+            .OrderByDescending(v => v.StartedAt)
+            .Take(10)
+            .ToListAsync();
+
+        var lastClinicalVisit = clinicalVisits.FirstOrDefault();
+        var lastClinicalVisitDto = lastClinicalVisit is not null ? MapClinicalVisitToDto(lastClinicalVisit) : null;
+
+        // Latest procedures (from all visits)
+        var latestProcedures = clinicalVisits
+            .SelectMany(v => v.Procedures)
+            .Where(p => p.IsActive)
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(5)
+            .Select(MapProcedureToDto)
+            .ToList();
+
+        // Latest prescriptions
+        var latestPrescriptions = clinicalVisits
+            .SelectMany(v => v.Prescriptions)
+            .Where(p => p.IsActive)
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(5)
+            .Select(p => new PrescriptionSummaryDto(p.Id, p.MedicationName, p.Dosage, p.Frequency, p.Duration, p.CreatedAt))
+            .ToList();
+
+        return new PatientSummaryDto(
+            patientDto,
+            lastAppointmentDto,
+            lastClinicalVisitDto,
+            clinicalVisits.Count,
+            latestProcedures,
+            latestPrescriptions
+        );
+    }
+
+    public async Task<PatientTimelineDto> GetPatientTimelineAsync(Guid id)
+    {
+        var entries = new List<TimelineEntryDto>();
+
+        // Appointments
+        var appointments = await _context.Appointments
+            .Where(a => a.PatientId == id && a.IsActive)
+            .OrderByDescending(a => a.AppointmentDate)
+            .Take(20)
+            .ToListAsync();
+
+        foreach (var a in appointments)
+        {
+            entries.Add(new TimelineEntryDto(
+                "appointment", a.Id,
+                $"موعد - {a.ServiceType}",
+                $"د. {a.Doctor?.FullName}",
+                a.AppointmentDate.ToDateTime(TimeOnly.Parse("00:00")),
+                a.Status.ToString()
+            ));
+        }
+
+        // Daily visits
+        var dailyVisits = await _context.DailyVisits
+            .Include(v => v.Doctor)
+            .Where(v => v.PatientId == id && v.IsActive)
+            .OrderByDescending(v => v.VisitDate)
+            .Take(20)
+            .ToListAsync();
+
+        foreach (var v in dailyVisits)
+        {
+            entries.Add(new TimelineEntryDto(
+                "dailyVisit", v.Id,
+                $"زيارة يومية - {v.VisitType}",
+                v.Doctor?.FullName,
+                v.VisitDate.ToDateTime(TimeOnly.Parse("00:00")),
+                v.Status.ToString()
+            ));
+        }
+
+        // Clinical visits
+        var clinicalVisits = await _context.ClinicalVisits
+            .Include(v => v.Doctor)
+            .Where(v => v.PatientId == id && v.IsActive)
+            .OrderByDescending(v => v.StartedAt)
+            .Take(20)
+            .ToListAsync();
+
+        foreach (var v in clinicalVisits)
+        {
+            entries.Add(new TimelineEntryDto(
+                "clinicalVisit", v.Id,
+                "زيارة سريرية",
+                v.Doctor?.FullName,
+                v.StartedAt,
+                v.Status.ToString()
+            ));
+        }
+
+        // Procedures
+        var procedures = await _context.ClinicalProcedures
+            .Where(p => p.PatientId == id && p.IsActive)
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(20)
+            .ToListAsync();
+
+        foreach (var p in procedures)
+        {
+            entries.Add(new TimelineEntryDto(
+                "procedure", p.Id,
+                p.Title,
+                p.ProcedureType.ToString(),
+                p.CreatedAt,
+                p.Status.ToString()
+            ));
+        }
+
+        // Prescriptions
+        var prescriptions = await _context.Prescriptions
+            .Where(p => p.PatientId == id && p.IsActive)
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(20)
+            .ToListAsync();
+
+        foreach (var p in prescriptions)
+        {
+            entries.Add(new TimelineEntryDto(
+                "prescription", p.Id,
+                $"وصفة - {p.MedicationName}",
+                p.Dosage,
+                p.CreatedAt,
+                null
+            ));
+        }
+
+        // Sort all by date descending
+        return new PatientTimelineDto(entries.OrderByDescending(e => e.Date).ToList());
+    }
+
+    private static PatientDto MapPatientToDto(Patient p) => new(
+        p.Id, p.PatientNumber, p.FullName, (int)p.Gender,
+        p.Gender == Gender.Male ? "ذكر" : "أنثى",
+        p.DateOfBirth, p.PhoneNumber, p.WhatsAppNumber,
+        p.Address, p.Notes, p.IsActive, p.CreatedAt, p.UpdatedAt
+    );
+
+    private static AppointmentDto? MapAppointmentToDto(Appointment a)
+    {
+        return new AppointmentDto(
+            a.Id, a.PatientId, "", a.DoctorId, "",
+            a.AppointmentDate, a.StartTime, a.EndTime,
+            a.ServiceType, (int)a.Status, a.Status.ToString(),
+            a.Notes, a.IsActive, a.CreatedAt, a.UpdatedAt
+        );
+    }
+
+    private static ClinicalVisitDto? MapClinicalVisitToDto(ClinicalVisit v)
+    {
+        return new ClinicalVisitDto(
+            v.Id, v.DailyVisitId, v.ClinicQueueItemId,
+            v.PatientId, "", null, v.DoctorId, null,
+            v.VisitDate, v.StartedAt, v.CompletedAt,
+            (int)v.Status, v.Status.ToString(),
+            v.ChiefComplaint, v.ClinicalFindings, v.Diagnosis,
+            v.TreatmentNotes, v.DoctorRecommendations,
+            v.NextVisitRecommended, v.NextVisitDate,
+            v.Prescriptions.Select(p => new PrescriptionDto(
+                p.Id, p.ClinicalVisitId, p.PatientId, p.DoctorId,
+                p.MedicationName, p.Dosage, p.Frequency, p.Duration,
+                p.Instructions, p.CreatedAt, p.UpdatedAt
+            )).ToList(),
+            v.CreatedAt, v.UpdatedAt
+        );
+    }
+
+    private static ClinicalProcedureDto MapProcedureToDto(ClinicalProcedure p) => new(
+        p.Id, p.ClinicalVisitId, p.PatientId, "", null,
+        p.DoctorId, null, (int)p.ProcedureType,
+        p.ProcedureType.ToString(), p.ToothNumber, p.ToothSurface,
+        p.Title, p.Description, p.ClinicalNotes,
+        (int)p.Status, p.Status.ToString(), p.StartedAt, p.CompletedAt,
+        p.IsActive, p.CreatedAt, p.UpdatedAt
+    );
 }

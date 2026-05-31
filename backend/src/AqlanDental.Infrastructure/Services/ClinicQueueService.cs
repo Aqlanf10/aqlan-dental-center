@@ -9,6 +9,7 @@ namespace AqlanDental.Infrastructure.Services;
 public class ClinicQueueService : IClinicQueueService
 {
     private readonly AqlanDentalDbContext _context;
+    private readonly IClinicSettingsService _clinicSettingsService;
 
     private static readonly string[] PriorityDisplay = { "عادي", "عاجل", "VIP", "طوارئ" };
     private static readonly string[] StatusDisplay = { "في الانتظار", "تم النداء", "داخل الغرفة", "قيد المعالجة", "مكتمل", "ملغي", "لم يحضر" };
@@ -19,9 +20,10 @@ public class ClinicQueueService : IClinicQueueService
     private static readonly HashSet<DailyVisitStatus> QueueEligibleStatuses = new()
     { DailyVisitStatus.CheckedIn, DailyVisitStatus.Waiting, DailyVisitStatus.ReadyForDoctor };
 
-    public ClinicQueueService(AqlanDentalDbContext context)
+    public ClinicQueueService(AqlanDentalDbContext context, IClinicSettingsService clinicSettingsService)
     {
         _context = context;
+        _clinicSettingsService = clinicSettingsService;
     }
 
     public async Task<TodayQueueDto> GetTodayQueueAsync(DateOnly? date)
@@ -233,6 +235,63 @@ public class ClinicQueueService : IClinicQueueService
 
         await _context.SaveChangesAsync();
         return await GetQueueItemByIdAsync(queueItemId);
+    }
+
+    public async Task<PublicClinicDisplayDto> GetPublicDisplayAsync(DateOnly? date)
+    {
+        var targetDate = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var settings = await _clinicSettingsService.GetSettingsAsync();
+        var clinicName = settings?.ClinicNameAr ?? "مركز أسنان";
+
+        var queueItems = await _context.ClinicQueueItems
+            .Include(q => q.Patient)
+            .Include(q => q.Room)
+            .Where(q => q.QueueDate == targetDate && q.IsActive)
+            .OrderByDescending(q => q.Priority)
+            .ThenBy(q => q.QueueNumber)
+            .ToListAsync();
+
+        // Find the most recently called patient
+        var currentlyCalled = queueItems
+            .Where(q => q.Status == QueueStatus.Called || q.Status == QueueStatus.InRoom)
+            .OrderByDescending(q => q.CalledAt)
+            .Select(MapToPublicDisplayDto)
+            .FirstOrDefault();
+
+        var publicItems = queueItems
+            .Where(q => q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.NoShow)
+            .Select(MapToPublicDisplayDto)
+            .ToList();
+
+        return new PublicClinicDisplayDto(
+            clinicName,
+            targetDate,
+            queueItems.Count(q => q.Status == QueueStatus.Waiting),
+            queueItems.Count(q => q.Status == QueueStatus.Called),
+            queueItems.Count(q => q.Status == QueueStatus.InRoom),
+            queueItems.Count(q => q.Status == QueueStatus.Completed),
+            currentlyCalled,
+            publicItems
+        );
+    }
+
+    private static PublicDisplayQueueItemDto MapToPublicDisplayDto(ClinicQueueItem q)
+    {
+        // Privacy: show only patient number + first name
+        var firstName = q.Patient?.FullName.Split(' ').FirstOrDefault() ?? string.Empty;
+        var displayName = $"{q.Patient?.PatientNumber} - {firstName}";
+
+        return new PublicDisplayQueueItemDto(
+            q.QueueNumber,
+            displayName,
+            q.Patient?.PatientNumber,
+            q.Room?.Name,
+            (int)q.Status,
+            GetStatusDisplay((int)q.Status),
+            (int)q.Priority,
+            q.CalledAt
+        );
     }
 
     private async Task ReleaseRoomAsync(ClinicQueueItem item, string userId)
