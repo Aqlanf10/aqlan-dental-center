@@ -28,6 +28,8 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<DoctorWeeklySchedule> DoctorWeeklySchedules => Set<DoctorWeeklySchedule>();
     public DbSet<MedicalHistory> MedicalHistories => Set<MedicalHistory>();
     public DbSet<DentalHistory> DentalHistories => Set<DentalHistory>();
+    public DbSet<ClinicService> ClinicServices => Set<ClinicService>();
+    public DbSet<Setting> Settings => Set<Setting>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -381,6 +383,32 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(e => e.PatientId).IsUnique();
+        });
+
+        builder.Entity<ClinicService>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ArabicName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.EnglishName).HasMaxLength(200);
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Department).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.Category).IsRequired();
+            entity.Property(e => e.DefaultPrice).HasPrecision(12, 2);
+
+            entity.HasIndex(e => e.Code).IsUnique();
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<Setting>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Key).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Value).HasMaxLength(2000);
+            entity.Property(e => e.Category).HasMaxLength(100);
+
+            entity.HasIndex(e => e.Key).IsUnique();
         });
 
         SeedDefaultClinicSettings(builder);

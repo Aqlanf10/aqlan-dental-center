@@ -642,3 +642,97 @@ export interface UpsertDentalHistoryRequest {
   tongueThrusting?: boolean;
   notes?: string | null;
 }
+
+// Clinic Service
+export const ServiceCategoryEnum = {
+  Consultation: 0,
+  Preventive: 1,
+  Restorative: 2,
+  Endodontics: 3,
+  Prosthodontics: 4,
+  Orthodontics: 5,
+  Surgery: 6,
+  Cosmetic: 7,
+  Radiology: 8,
+  Other: 99,
+} as const;
+
+export const ServiceCategoryLabels: Record<number, string> = {
+  0: 'استشارة',
+  1: 'وقائي',
+  2: 'ترميمي',
+  3: 'عصبي',
+  4: 'تعويضي',
+  5: 'تقويم',
+  6: 'جراحة',
+  7: 'تجميلي',
+  8: 'أشعة',
+  99: 'أخرى',
+};
+
+export interface ClinicServiceDto {
+  id: string;
+  arabicName: string;
+  englishName: string;
+  code: string;
+  department: string | null;
+  category: number;
+  categoryDisplay: string;
+  description: string | null;
+  defaultDurationMinutes: number;
+  defaultPrice: number;
+  requiresDoctor: boolean;
+  showInBooking: boolean;
+  showInReception: boolean;
+  showInTreatmentPlan: boolean;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateClinicServiceRequest {
+  arabicName: string;
+  englishName?: string | null;
+  code: string;
+  department?: string | null;
+  category?: number | null;
+  description?: string | null;
+  defaultDurationMinutes?: number | null;
+  defaultPrice?: number | null;
+  requiresDoctor?: boolean | null;
+  showInBooking?: boolean | null;
+  showInReception?: boolean | null;
+  showInTreatmentPlan?: boolean | null;
+  sortOrder?: number | null;
+}
+
+export interface UpdateClinicServiceRequest {
+  arabicName?: string | null;
+  englishName?: string | null;
+  code?: string | null;
+  department?: string | null;
+  category?: number | null;
+  description?: string | null;
+  defaultDurationMinutes?: number | null;
+  defaultPrice?: number | null;
+  requiresDoctor?: boolean | null;
+  showInBooking?: boolean | null;
+  showInReception?: boolean | null;
+  showInTreatmentPlan?: number | null;
+  sortOrder?: number | null;
+}
+
+// Setting
+export interface SettingDto {
+  id: string;
+  key: string;
+  value: string | null;
+  category: string | null;
+  updatedAt: string;
+}
+
+export interface UpsertSettingRequest {
+  value?: string | null;
+  category?: string | null;
+}
