@@ -14,8 +14,16 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        var connectionString = configuration.GetConnectionString("DefaultConnection")!;
+        var useSqlite = connectionString.StartsWith("Data Source", StringComparison.OrdinalIgnoreCase);
+
         services.AddDbContext<AqlanDentalDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+        {
+            if (useSqlite)
+                options.UseSqlite(connectionString);
+            else
+                options.UseNpgsql(connectionString);
+        });
 
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
         {

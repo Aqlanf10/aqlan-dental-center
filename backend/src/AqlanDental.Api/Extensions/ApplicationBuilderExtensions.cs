@@ -1,3 +1,4 @@
+using AqlanDental.Infrastructure;
 using AqlanDental.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,7 +14,13 @@ public static class ApplicationBuilderExtensions
         try
         {
             var context = services.GetRequiredService<AqlanDentalDbContext>();
-            await context.Database.MigrateAsync();
+            var connectionString = app.Configuration.GetConnectionString("DefaultConnection")!;
+            var useSqlite = connectionString.StartsWith("Data Source", StringComparison.OrdinalIgnoreCase);
+
+            if (useSqlite)
+                await context.Database.EnsureCreatedAsync();
+            else
+                await context.Database.MigrateAsync();
 
             var seeder = services.GetRequiredService<InitialSeeder>();
             await seeder.SeedAsync();
