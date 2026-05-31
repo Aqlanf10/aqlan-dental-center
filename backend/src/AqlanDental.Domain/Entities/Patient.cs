@@ -25,6 +25,9 @@ public class Patient
     public List<TreatmentPlanStep> TreatmentPlanSteps { get; set; } = new();
     public List<OrthoCase> OrthoCases { get; set; } = new();
     public List<SurgeryCase> SurgeryCases { get; set; } = new();
+    public List<Contract> Contracts { get; set; } = new();
+    public List<Invoice> Invoices { get; set; } = new();
+    public List<Payment> Payments { get; set; } = new();
 }
 
 public enum Gender

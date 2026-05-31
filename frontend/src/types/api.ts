@@ -1057,3 +1057,95 @@ export interface UpdateSurgeryCaseRequest {
 export interface UpdateSurgeryStatusRequest {
   status: number;
 }
+
+// Finance
+export const ContractStatusEnum = { Active: 0, Completed: 1, Cancelled: 2, Defaulted: 3 } as const;
+export const ContractStatusLabels: Record<number, string> = { 0: 'نشط', 1: 'مكتمل', 2: 'ملغي', 3: 'متخلف' };
+export const InvoiceStatusEnum = { Draft: 0, Issued: 1, Paid: 2, Cancelled: 3 } as const;
+export const InvoiceStatusLabels: Record<number, string> = { 0: 'مسودة', 1: 'صادرة', 2: 'مدفوعة', 3: 'ملغاة' };
+export const PaymentMethodEnum = { Cash: 0, Card: 1, BankTransfer: 2, Check: 3, Other: 99 } as const;
+export const PaymentMethodLabels: Record<number, string> = { 0: 'نقدي', 1: 'بطاقة', 2: 'تحويل بنكي', 3: 'شيك', 99: 'أخرى' };
+export const SessionStatusEnum = { Open: 0, Closed: 1, Reconciled: 2 } as const;
+export const FinancialCategoryEnum = {
+  PatientPayment: 0, SupplierPayment: 1, SalaryPayment: 2, DoctorCommission: 3,
+  OperationalExpense: 4, Refund: 5, GeneralCost: 6, InternalTransfer: 7,
+  SalaryAdvance: 8, Reversal: 9, Other: 99
+} as const;
+export const FinancialCategoryLabels: Record<number, string> = {
+  0: 'دفع مريض', 1: 'دفع مورد', 2: 'دفع راتب', 3: 'عمولة طبيب',
+  4: 'مصروف تشغيلي', 5: 'استرداد', 6: 'تكلفة عامة', 7: 'تحويل داخلي',
+  8: 'سلفة', 9: 'عكس', 99: 'أخرى'
+};
+
+export interface ContractDto {
+  id: string; patientId: string; patientName: string; specialty: string | null;
+  relatedCaseId: string | null; totalAmount: number; downPayment: number;
+  installmentsCount: number; installmentAmount: number | null; startDate: string | null;
+  discountAmount: number; discountReason: string | null; status: number;
+  statusDisplay: string; notes: string | null; createdAt: string; updatedAt: string;
+}
+
+export interface CreateContractRequest {
+  patientId: string; specialty?: string | null; relatedCaseId?: string | null;
+  totalAmount: number; downPayment: number; installmentsCount: number;
+  installmentAmount?: number | null; startDate?: string | null;
+  discountAmount?: number; discountReason?: string | null; notes?: string | null;
+}
+
+export interface InvoiceLineItemDto {
+  id: string; invoiceId: string; clinicServiceId: string | null;
+  serviceNameSnapshot: string; description: string | null; quantity: number;
+  unitPrice: number; totalPrice: number; lineDiscountAmount: number;
+  doctorId: string | null; doctorName: string | null; toothNumber: string | null;
+  sortOrder: number;
+}
+
+export interface InvoiceDto {
+  id: string; patientId: string; patientName: string; visitId: string | null;
+  invoiceNumber: string; status: number; statusDisplay: string; subtotal: number;
+  discountAmount: number; taxAmount: number; totalAmount: number;
+  notes: string | null; lineItems: InvoiceLineItemDto[]; createdAt: string; updatedAt: string;
+}
+
+export interface CreateInvoiceRequest {
+  patientId: string; visitId?: string | null; notes?: string | null;
+  lineItems: { clinicServiceId?: string | null; serviceNameSnapshot: string;
+    description?: string | null; quantity: number; unitPrice: number;
+    lineDiscountAmount?: number; doctorId?: string | null; toothNumber?: string | null; }[];
+}
+
+export interface PaymentDto {
+  id: string; contractId: string | null; invoiceId: string | null;
+  patientId: string; patientName: string; amount: number; paymentDate: string;
+  paymentMethod: number; paymentMethodDisplay: string; serviceDescription: string | null;
+  doctorId: string | null; doctorName: string | null; receivedBy: string | null;
+  receiptNumber: string | null; notes: string | null; createdAt: string;
+}
+
+export interface CreatePaymentRequest {
+  contractId?: string | null; invoiceId?: string | null; patientId: string;
+  amount: number; paymentMethod: number; serviceDescription?: string | null;
+  doctorId?: string | null; notes?: string | null;
+}
+
+export interface PatientFinanceSummaryDto {
+  totalContracts: number; totalContractAmount: number; totalPaid: number;
+  totalOutstanding: number; overdueContracts: number; lastPaymentDate: string | null;
+}
+
+export interface FinanceDashboardDto {
+  todayRevenue: number; monthRevenue: number; pendingInvoices: number;
+  overdueContracts: number; activeContracts: number; totalPatients: number;
+}
+
+export interface CashierSessionDto {
+  id: string; sessionNumber: string; cashierId: string; cashierName: string;
+  openingTime: string; closingTime: string | null; openingBalance: number;
+  expectedClosingCash: number; actualClosingCash: number | null;
+  status: number; statusDisplay: string; notes: string | null; createdAt: string;
+}
+
+export interface TreasuryDto {
+  id: string; name: string; type: number; typeDisplay: string;
+  balance: number; isActive: boolean; createdAt: string; updatedAt: string;
+}

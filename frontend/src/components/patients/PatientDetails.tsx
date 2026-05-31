@@ -10,6 +10,15 @@ import type {
   TimelineEntryDto,
   AppointmentDto,
   PagedResult,
+  PaymentDto,
+  ContractDto,
+  PatientFinanceSummaryDto,
+  CreatePaymentRequest,
+  CreateContractRequest,
+} from '../../types/api';
+import {
+  ContractStatusLabels,
+  PaymentMethodLabels,
 } from '../../types/api';
 import ConfirmDialog from '../common/ConfirmDialog';
 import LoadingState from '../common/LoadingState';
@@ -33,7 +42,7 @@ const TABS = [
   { id: 'procedures', label: 'الإجراءات العلاجية', enabled: true, group: 'سريري' },
   { id: 'prescriptions', label: 'الوصفات', enabled: true, group: 'سريري' },
   { id: 'timeline', label: 'السجل الزمني', enabled: true, group: 'سجلات' },
-  { id: 'finance', label: 'المالية', enabled: false, group: 'مالي' },
+  { id: 'finance', label: 'المالية', enabled: true, group: 'مالي' },
 ];
 
 export default function PatientDetails({ patientId, canEdit, canDelete }: PatientDetailsProps) {
@@ -215,7 +224,7 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
       {activeTab === 'procedures' && <ProceduresTab entries={procedures} />}
       {activeTab === 'prescriptions' && <PrescriptionsTab entries={prescriptions} summary={summary} />}
       {activeTab === 'timeline' && <TimelineViewTab entries={timeline} />}
-      {activeTab === 'finance' && <DisabledTabPlaceholder />}
+      {activeTab === 'finance' && <FinanceTab patientId={patientId} />}
 
       <ConfirmDialog
         isOpen={showDelete}
@@ -551,14 +560,443 @@ function TimelineViewTab({ entries }: { entries: TimelineEntryDto[] }) {
   );
 }
 
-function DisabledTabPlaceholder() {
+function FinanceTab({ patientId }: { patientId: string }) {
+  const [summary, setSummary] = useState<PatientFinanceSummaryDto | null>(null);
+  const [payments, setPayments] = useState<PaymentDto[]>([]);
+  const [contracts, setContracts] = useState<ContractDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreatePayment, setShowCreatePayment] = useState(false);
+  const [showCreateContract, setShowCreateContract] = useState(false);
+  const [savingPayment, setSavingPayment] = useState(false);
+  const [savingContract, setSavingContract] = useState(false);
+
+  // Payment form
+  const [payForm, setPayForm] = useState({
+    amount: '',
+    paymentMethod: 0,
+    contractId: '',
+    serviceDescription: '',
+    notes: '',
+  });
+
+  // Contract form
+  const [contractForm, setContractForm] = useState({
+    totalAmount: '',
+    downPayment: '',
+    installmentsCount: '',
+    installmentAmount: '',
+    specialty: '',
+    startDate: '',
+    discountAmount: '',
+    discountReason: '',
+    notes: '',
+  });
+
+  const contractStatusColors: Record<number, string> = {
+    0: 'bg-green-100 text-green-700',
+    1: 'bg-blue-100 text-blue-700',
+    2: 'bg-red-100 text-red-700',
+    3: 'bg-yellow-100 text-yellow-700',
+  };
+
+  const paymentMethodColors: Record<number, string> = {
+    0: 'bg-green-100 text-green-700',
+    1: 'bg-blue-100 text-blue-700',
+    2: 'bg-purple-100 text-purple-700',
+    3: 'bg-yellow-100 text-yellow-700',
+    99: 'bg-gray-100 text-gray-700',
+  };
+
+  const formatCurrency = (amount: number) =>
+    `${amount.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [sumRes, payRes, conRes] = await Promise.all([
+        api.get<PatientFinanceSummaryDto>(`/finance/patients/${patientId}/summary`).catch(() => null),
+        api.get<PagedResult<PaymentDto>>(`/finance/payments?patientId=${patientId}&pageSize=50`).catch(() => null),
+        api.get<PagedResult<ContractDto>>(`/finance/contracts?patientId=${patientId}&pageSize=50`).catch(() => null),
+      ]);
+      if (sumRes?.data) setSummary(sumRes.data);
+      if (payRes?.data) setPayments(payRes.data.items || []);
+      if (conRes?.data) setContracts(conRes.data.items || []);
+    } catch {
+      // silent
+    }
+    setLoading(false);
+  }, [patientId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleCreatePayment = async () => {
+    if (!payForm.amount || Number(payForm.amount) <= 0) return;
+    setSavingPayment(true);
+    try {
+      const req: CreatePaymentRequest = {
+        patientId,
+        amount: Number(payForm.amount),
+        paymentMethod: payForm.paymentMethod,
+        contractId: payForm.contractId || null,
+        serviceDescription: payForm.serviceDescription || null,
+        notes: payForm.notes || null,
+      };
+      await api.post('/finance/payments', req);
+      setShowCreatePayment(false);
+      setPayForm({ amount: '', paymentMethod: 0, contractId: '', serviceDescription: '', notes: '' });
+      loadData();
+    } catch {
+      // silent
+    }
+    setSavingPayment(false);
+  };
+
+  const handleCreateContract = async () => {
+    if (!contractForm.totalAmount || !contractForm.installmentsCount) return;
+    setSavingContract(true);
+    try {
+      const req: CreateContractRequest = {
+        patientId,
+        totalAmount: Number(contractForm.totalAmount),
+        downPayment: Number(contractForm.downPayment) || 0,
+        installmentsCount: Number(contractForm.installmentsCount),
+        installmentAmount: contractForm.installmentAmount ? Number(contractForm.installmentAmount) : null,
+        specialty: contractForm.specialty || null,
+        startDate: contractForm.startDate || null,
+        discountAmount: contractForm.discountAmount ? Number(contractForm.discountAmount) : undefined,
+        discountReason: contractForm.discountReason || null,
+        notes: contractForm.notes || null,
+      };
+      await api.post('/finance/contracts', req);
+      setShowCreateContract(false);
+      setContractForm({ totalAmount: '', downPayment: '', installmentsCount: '', installmentAmount: '', specialty: '', startDate: '', discountAmount: '', discountReason: '', notes: '' });
+      loadData();
+    } catch {
+      // silent
+    }
+    setSavingContract(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-40 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <svg className="h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <p className="mt-4 text-lg font-bold text-gray-400">قريبًا</p>
-      <p className="mt-1 text-sm text-gray-400">هذه الميزة قيد التطوير</p>
+    <div className="space-y-6">
+      {/* Finance Summary */}
+      {summary && (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-lg bg-green-50 px-4 py-3">
+            <p className="text-2xl font-bold text-green-700">{formatCurrency(summary.totalPaid)}</p>
+            <p className="text-xs font-medium text-green-600">الإجمالي المدفوع</p>
+          </div>
+          <div className="rounded-lg bg-red-50 px-4 py-3">
+            <p className="text-2xl font-bold text-red-700">{formatCurrency(summary.totalOutstanding)}</p>
+            <p className="text-xs font-medium text-red-600">المبلغ المستحق</p>
+          </div>
+          <div className="rounded-lg bg-navy/5 px-4 py-3">
+            <p className="text-2xl font-bold text-navy">{formatCurrency(summary.totalContractAmount)}</p>
+            <p className="text-xs font-medium text-navy/70">إجمالي العقود ({summary.totalContracts})</p>
+          </div>
+        </div>
+      )}
+
+      {/* Payments */}
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-bold text-navy">المدفوعات</h3>
+          <button
+            onClick={() => setShowCreatePayment(true)}
+            className="inline-flex items-center gap-1 rounded-lg bg-orange px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-orange-600"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            دفعة جديدة
+          </button>
+        </div>
+        {payments.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="px-3 py-2 text-right font-medium text-gray-600">المبلغ</th>
+                  <th className="px-3 py-2 text-right font-medium text-gray-600">طريقة الدفع</th>
+                  <th className="px-3 py-2 text-right font-medium text-gray-600">الوصف</th>
+                  <th className="px-3 py-2 text-right font-medium text-gray-600">التاريخ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {payments.map((p) => (
+                  <tr key={p.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 font-medium text-navy">{formatCurrency(p.amount)}</td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${paymentMethodColors[p.paymentMethod] || 'bg-gray-100 text-gray-700'}`}>
+                        {PaymentMethodLabels[p.paymentMethod] || p.paymentMethodDisplay}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 max-w-[200px] truncate text-gray-500">{p.serviceDescription || '—'}</td>
+                    <td className="px-3 py-2 text-gray-500">{new Date(p.paymentDate).toLocaleDateString('ar-SA')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="py-6 text-center text-sm text-gray-400">لا توجد مدفوعات مسجلة</p>
+        )}
+      </div>
+
+      {/* Contracts */}
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-bold text-navy">العقود</h3>
+          <button
+            onClick={() => setShowCreateContract(true)}
+            className="inline-flex items-center gap-1 rounded-lg bg-orange px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-orange-600"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            عقد جديد
+          </button>
+        </div>
+        {contracts.length > 0 ? (
+          <div className="space-y-3">
+            {contracts.map((c) => (
+              <div key={c.id} className="rounded-lg border border-gray-100 p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${contractStatusColors[c.status] || 'bg-gray-100 text-gray-700'}`}>
+                      {ContractStatusLabels[c.status] || c.statusDisplay}
+                    </span>
+                    {c.specialty && <span className="mr-2 text-xs text-gray-500">{c.specialty}</span>}
+                  </div>
+                  <p className="text-sm font-bold text-navy">{formatCurrency(c.totalAmount)}</p>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
+                  <span>دفعة مقدمة: {formatCurrency(c.downPayment)}</span>
+                  <span>أقساط: {c.installmentsCount}</span>
+                  {c.installmentAmount && <span>قسط: {formatCurrency(c.installmentAmount)}</span>}
+                  {c.discountAmount > 0 && <span className="text-green-600">خصم: {formatCurrency(c.discountAmount)}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="py-6 text-center text-sm text-gray-400">لا توجد عقود مسجلة</p>
+        )}
+      </div>
+
+      {/* Create Payment Modal */}
+      {showCreatePayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCreatePayment(false)}>
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-navy">دفعة جديدة</h2>
+              <button onClick={() => setShowCreatePayment(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">المبلغ <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    value={payForm.amount}
+                    onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })}
+                    placeholder="0.00"
+                    min={0}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">طريقة الدفع <span className="text-red-500">*</span></label>
+                  <select
+                    value={payForm.paymentMethod}
+                    onChange={(e) => setPayForm({ ...payForm, paymentMethod: Number(e.target.value) })}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                  >
+                    {Object.entries(PaymentMethodLabels).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">العقد</label>
+                <select
+                  value={payForm.contractId}
+                  onChange={(e) => setPayForm({ ...payForm, contractId: e.target.value })}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                >
+                  <option value="">-- بدون عقد --</option>
+                  {contracts.map((c) => (
+                    <option key={c.id} value={c.id}>عقد {formatCurrency(c.totalAmount)}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">وصف الخدمة</label>
+                <input
+                  type="text"
+                  value={payForm.serviceDescription}
+                  onChange={(e) => setPayForm({ ...payForm, serviceDescription: e.target.value })}
+                  placeholder="مثال: حشوة سن"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">ملاحظات</label>
+                <textarea
+                  value={payForm.notes}
+                  onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })}
+                  rows={2}
+                  placeholder="ملاحظات..."
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleCreatePayment}
+                  disabled={savingPayment || !payForm.amount}
+                  className="flex-1 rounded-lg bg-orange px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {savingPayment ? 'جاري الحفظ...' : 'تسجيل الدفعة'}
+                </button>
+                <button onClick={() => setShowCreatePayment(false)} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Contract Modal */}
+      {showCreateContract && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCreateContract(false)}>
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-navy">عقد جديد</h2>
+              <button onClick={() => setShowCreateContract(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">التخصص</label>
+                <input
+                  type="text"
+                  value={contractForm.specialty}
+                  onChange={(e) => setContractForm({ ...contractForm, specialty: e.target.value })}
+                  placeholder="مثال: تقويم أسنان"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">المبلغ الإجمالي <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    value={contractForm.totalAmount}
+                    onChange={(e) => setContractForm({ ...contractForm, totalAmount: e.target.value })}
+                    placeholder="0.00"
+                    min={0}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">الدفعة المقدمة</label>
+                  <input
+                    type="number"
+                    value={contractForm.downPayment}
+                    onChange={(e) => setContractForm({ ...contractForm, downPayment: e.target.value })}
+                    placeholder="0.00"
+                    min={0}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">عدد الأقساط <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    value={contractForm.installmentsCount}
+                    onChange={(e) => setContractForm({ ...contractForm, installmentsCount: e.target.value })}
+                    placeholder="0"
+                    min={1}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">قيمة القسط</label>
+                  <input
+                    type="number"
+                    value={contractForm.installmentAmount}
+                    onChange={(e) => setContractForm({ ...contractForm, installmentAmount: e.target.value })}
+                    placeholder="تلقائي"
+                    min={0}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">تاريخ البدء</label>
+                  <input
+                    type="date"
+                    value={contractForm.startDate}
+                    onChange={(e) => setContractForm({ ...contractForm, startDate: e.target.value })}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">مبلغ الخصم</label>
+                  <input
+                    type="number"
+                    value={contractForm.discountAmount}
+                    onChange={(e) => setContractForm({ ...contractForm, discountAmount: e.target.value })}
+                    placeholder="0.00"
+                    min={0}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">ملاحظات</label>
+                <textarea
+                  value={contractForm.notes}
+                  onChange={(e) => setContractForm({ ...contractForm, notes: e.target.value })}
+                  rows={2}
+                  placeholder="ملاحظات..."
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleCreateContract}
+                  disabled={savingContract || !contractForm.totalAmount || !contractForm.installmentsCount}
+                  className="flex-1 rounded-lg bg-orange px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {savingContract ? 'جاري الحفظ...' : 'إنشاء العقد'}
+                </button>
+                <button onClick={() => setShowCreateContract(false)} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

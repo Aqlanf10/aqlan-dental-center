@@ -121,7 +121,11 @@ public static class ServiceCollectionExtensions
             .AddPolicy("SurgeryRead", policy =>
                 policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
             .AddPolicy("SurgeryWrite", policy =>
-                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor));
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("FinanceRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant, AppRoles.Reception))
+            .AddPolicy("FinanceWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant));
 
         services.AddSwaggerGen(c =>
         {

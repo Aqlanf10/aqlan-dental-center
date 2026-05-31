@@ -38,6 +38,13 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<OrthoVisit> OrthoVisits => Set<OrthoVisit>();
     public DbSet<TreatmentStage> TreatmentStages => Set<TreatmentStage>();
     public DbSet<SurgeryCase> SurgeryCases => Set<SurgeryCase>();
+    public DbSet<Contract> Contracts => Set<Contract>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<InvoiceLineItem> InvoiceLineItems => Set<InvoiceLineItem>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<CashierSession> CashierSessions => Set<CashierSession>();
+    public DbSet<Treasury> Treasuries => Set<Treasury>();
+    public DbSet<CashFlowTransaction> CashFlowTransactions => Set<CashFlowTransaction>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -642,6 +649,198 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.DoctorId);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.SurgeryDate);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        // ─── Finance V3 Entities ─────────────────────────────────────────
+
+        builder.Entity<Contract>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Specialty).HasMaxLength(200);
+            entity.Property(e => e.TotalAmount).HasPrecision(12, 2);
+            entity.Property(e => e.DownPayment).HasPrecision(12, 2);
+            entity.Property(e => e.InstallmentAmount).HasPrecision(12, 2);
+            entity.Property(e => e.DiscountAmount).HasPrecision(12, 2);
+            entity.Property(e => e.DiscountReason).HasMaxLength(500);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany(p => p.Contracts)
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.StartDate);
+        });
+
+        builder.Entity<Invoice>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.InvoiceNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.Subtotal).HasPrecision(12, 2);
+            entity.Property(e => e.DiscountAmount).HasPrecision(12, 2);
+            entity.Property(e => e.TaxAmount).HasPrecision(12, 2);
+            entity.Property(e => e.TotalAmount).HasPrecision(12, 2);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany(p => p.Invoices)
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Visit)
+                .WithMany()
+                .HasForeignKey(e => e.VisitId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(e => e.LineItems)
+                .WithOne(li => li.Invoice)
+                .HasForeignKey(li => li.InvoiceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.InvoiceNumber).IsUnique();
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.VisitId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<InvoiceLineItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ServiceNameSnapshot).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.UnitPrice).HasPrecision(12, 2);
+            entity.Property(e => e.TotalPrice).HasPrecision(12, 2);
+            entity.Property(e => e.LineDiscountAmount).HasPrecision(12, 2);
+            entity.Property(e => e.ToothNumber).HasMaxLength(50);
+
+            entity.HasOne(e => e.ClinicService)
+                .WithMany()
+                .HasForeignKey(e => e.ClinicServiceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.InvoiceId);
+            entity.HasIndex(e => e.ClinicServiceId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<Payment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Amount).HasPrecision(12, 2);
+            entity.Property(e => e.PaymentMethod).IsRequired();
+            entity.Property(e => e.ServiceDescription).HasMaxLength(500);
+            entity.Property(e => e.ReceivedBy).HasMaxLength(200);
+            entity.Property(e => e.ReceiptNumber).HasMaxLength(50);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Contract)
+                .WithMany()
+                .HasForeignKey(e => e.ContractId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Invoice)
+                .WithMany(i => i.Payments)
+                .HasForeignKey(e => e.InvoiceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany(p => p.Payments)
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.ContractId);
+            entity.HasIndex(e => e.InvoiceId);
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.PaymentDate);
+            entity.HasIndex(e => e.PaymentMethod);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<CashierSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SessionNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.CashierId).IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.OpeningBalance).HasPrecision(12, 2);
+            entity.Property(e => e.ExpectedClosingCash).HasPrecision(12, 2);
+            entity.Property(e => e.ActualClosingCash).HasPrecision(12, 2);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Cashier)
+                .WithMany()
+                .HasForeignKey(e => e.CashierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.SessionNumber).IsUnique();
+            entity.HasIndex(e => e.CashierId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.OpeningTime);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<Treasury>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Type).IsRequired();
+            entity.Property(e => e.Balance).HasPrecision(12, 2);
+
+            entity.HasMany(e => e.Transactions)
+                .WithOne(t => t.Treasury)
+                .HasForeignKey(t => t.TreasuryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<CashFlowTransaction>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TransactionNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Type).IsRequired();
+            entity.Property(e => e.Category).IsRequired();
+            entity.Property(e => e.Amount).HasPrecision(12, 2);
+            entity.Property(e => e.PaymentMethod).IsRequired();
+            entity.Property(e => e.ReferenceNumber).HasMaxLength(50);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.PerformedBy).HasMaxLength(200);
+
+            entity.HasOne(e => e.CashierSession)
+                .WithMany()
+                .HasForeignKey(e => e.CashierSessionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Treasury)
+                .WithMany(t => t.Transactions)
+                .HasForeignKey(e => e.TreasuryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.TransactionNumber).IsUnique();
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.TransactionDate);
+            entity.HasIndex(e => e.CashierSessionId);
+            entity.HasIndex(e => e.TreasuryId);
             entity.HasIndex(e => e.IsActive);
         });
 
