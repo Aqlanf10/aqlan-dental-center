@@ -57,7 +57,7 @@ function HomePage() {
                   </svg>
                 </div>
                 <h3 className="mt-3 font-bold text-navy">الهاتف</h3>
-                <p className="mt-1 text-sm text-gray-500">--</p>
+                <p className="mt-1 text-sm text-gray-500" dir="ltr">+967-1-200200</p>
               </div>
               <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-navy/10 text-navy">
@@ -66,7 +66,7 @@ function HomePage() {
                   </svg>
                 </div>
                 <h3 className="mt-3 font-bold text-navy">البريد الإلكتروني</h3>
-                <p className="mt-1 text-sm text-gray-500">--</p>
+                <p className="mt-1 text-sm text-gray-500" dir="ltr">info@aqlandental.dev</p>
               </div>
               <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-navy/10 text-navy">
@@ -76,7 +76,7 @@ function HomePage() {
                   </svg>
                 </div>
                 <h3 className="mt-3 font-bold text-navy">العنوان</h3>
-                <p className="mt-1 text-sm text-gray-500">--</p>
+                <p className="mt-1 text-sm text-gray-500">صنعاء، شارع الزبيري</p>
               </div>
             </div>
           </div>

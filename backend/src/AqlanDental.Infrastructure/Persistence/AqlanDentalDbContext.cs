@@ -135,9 +135,9 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
         {
             Id = 1,
             ClinicNameAr = "مركز الدكتور عقلان الكامل لتقويم وزراعة وتجميل الأسنان",
-            ClinicNameEn = "Aqlan Dental Center",
-            PhoneNumber = "+967-1-234567",
-            Address = "صنعاء، اليمن",
+            ClinicNameEn = "Dr. Aqlan Complete Center for Orthodontics, Implants & Cosmetic Dentistry",
+            PhoneNumber = "+967-1-200200",
+            Address = "صنعاء، شارع الزبيري، بجوار البنك المركزي اليمني",
             CurrencyDefault = "YER",
             UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
