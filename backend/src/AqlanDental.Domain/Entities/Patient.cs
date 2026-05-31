@@ -16,6 +16,18 @@ public class Patient
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public string? CreatedBy { get; set; }
     public string? UpdatedBy { get; set; }
+
+    // Navigation properties
+    public MedicalHistory? MedicalHistory { get; set; }
+    public DentalHistory? DentalHistory { get; set; }
+    public List<DentalChart> DentalCharts { get; set; } = new();
+    public List<GeneralTreatment> GeneralTreatments { get; set; } = new();
+    public List<TreatmentPlanStep> TreatmentPlanSteps { get; set; } = new();
+    public List<OrthoCase> OrthoCases { get; set; } = new();
+    public List<SurgeryCase> SurgeryCases { get; set; } = new();
+    public List<Contract> Contracts { get; set; } = new();
+    public List<Invoice> Invoices { get; set; } = new();
+    public List<Payment> Payments { get; set; } = new();
 }
 
 public enum Gender

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from './AuthContext';
+import { useRouter } from 'next/navigation';
 import Logo from '../Logo';
 
 interface LoginModalProps {
@@ -11,6 +12,7 @@ interface LoginModalProps {
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const { login } = useAuth();
+  const router = useRouter();
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -34,8 +36,32 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setIsLoading(true);
     try {
       await login(emailOrPhone, password);
+
+      // Check if must change password
+      const stored = localStorage.getItem('token');
+      if (stored) {
+        try {
+          const base64Url = stored.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          );
+          const payload = JSON.parse(jsonPayload);
+          if (payload.mustChangePassword === 'true') {
+            onClose();
+            router.push('/change-password');
+            return;
+          }
+        } catch {
+          // Ignore JWT decode errors
+        }
+      }
+
       onClose();
-      window.location.href = '/dashboard';
+      router.push('/dashboard');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'حدث خطأ في الاتصال. يرجى المحاولة لاحقاً';
       setError(message);
@@ -49,7 +75,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="relative w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
-        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute left-4 top-4 text-gray-400 hover:text-gray-600 transition-colors"
@@ -60,22 +85,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </svg>
         </button>
 
-        {/* Logo */}
         <div className="mb-6 flex justify-center">
           <Logo size="md" showText={true} />
         </div>
 
-        {/* Title */}
         <h2 className="mb-6 text-center text-xl font-bold text-navy">تسجيل الدخول</h2>
 
-        {/* Error message */}
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
-            {error}
-          </div>
+          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">{error}</div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="emailOrPhone" className="mb-1 block text-sm font-medium text-gray-700">
@@ -85,15 +104,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               id="emailOrPhone"
               type="text"
               value={emailOrPhone}
-              onChange={(e) => { setEmailOrPhone(e.target.value); setFieldErrors(prev => ({ ...prev, emailOrPhone: undefined })); }}
+              onChange={(e) => {
+                setEmailOrPhone(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, emailOrPhone: undefined }));
+              }}
               className={`w-full rounded-lg border px-4 py-3 text-sm outline-none transition-colors focus:border-blue focus:ring-1 focus:ring-blue ${
                 fieldErrors.emailOrPhone ? 'border-red-400' : 'border-gray-300'
               }`}
               dir="rtl"
             />
-            {fieldErrors.emailOrPhone && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.emailOrPhone}</p>
-            )}
+            {fieldErrors.emailOrPhone && <p className="mt-1 text-xs text-red-500">{fieldErrors.emailOrPhone}</p>}
           </div>
 
           <div>
@@ -104,21 +124,25 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               id="password"
               type="password"
               value={password}
-              onChange={(e) => { setPassword(e.target.value); setFieldErrors(prev => ({ ...prev, password: undefined })); }}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, password: undefined }));
+              }}
               className={`w-full rounded-lg border px-4 py-3 text-sm outline-none transition-colors focus:border-blue focus:ring-1 focus:ring-blue ${
                 fieldErrors.password ? 'border-red-400' : 'border-gray-300'
               }`}
               dir="rtl"
             />
-            {fieldErrors.password && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.password}</p>
-            )}
+            {fieldErrors.password && <p className="mt-1 text-xs text-red-500">{fieldErrors.password}</p>}
           </div>
 
           <div className="text-left">
-            <button type="button" className="text-xs text-blue hover:text-navy-light transition-colors">
+            <a
+              href="/forgot-password"
+              className="text-xs text-blue hover:text-navy-light transition-colors"
+            >
               نسيت كلمة المرور؟
-            </button>
+            </a>
           </div>
 
           <button

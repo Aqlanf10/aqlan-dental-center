@@ -22,9 +22,9 @@ public class JwtService : IJwtService
         _configuration = configuration;
     }
 
-    public async Task<AuthResult> GenerateTokensAsync(string userId, string fullName, IList<string> roles)
+    public async Task<AuthResult> GenerateTokensAsync(string userId, string fullName, IList<string> roles, bool mustChangePassword = false)
     {
-        var (tokenString, jwtToken) = GenerateAccessToken(userId, fullName, roles);
+        var (tokenString, jwtToken) = GenerateAccessToken(userId, fullName, roles, mustChangePassword);
         var refreshToken = GenerateRefreshToken();
 
         var jwtId = jwtToken.Payload.Jti
@@ -122,7 +122,7 @@ public class JwtService : IJwtService
     }
 
     private (string TokenString, JwtSecurityToken JwtToken) GenerateAccessToken(
-        string userId, string fullName, IList<string> roles)
+        string userId, string fullName, IList<string> roles, bool mustChangePassword = false)
     {
         var claims = new List<Claim>
         {
@@ -130,6 +130,7 @@ public class JwtService : IJwtService
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Email, userId),
             new("fullName", fullName),
+            new("mustChangePassword", mustChangePassword.ToString().ToLower()),
         };
 
         foreach (var role in roles)

@@ -101,7 +101,55 @@ public static class ServiceCollectionExtensions
             .AddPolicy("ClinicalProceduresRead", policy =>
                 policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
             .AddPolicy("ClinicalProceduresWrite", policy =>
-                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor));
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("DoctorScheduleRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
+            .AddPolicy("DoctorScheduleWrite", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("ClinicServicesRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception, AppRoles.Accountant))
+            .AddPolicy("ClinicServicesWrite", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("GeneralDentistryRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
+            .AddPolicy("GeneralDentistryWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("OrthodonticsRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
+            .AddPolicy("OrthodonticsWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("SurgeryRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
+            .AddPolicy("SurgeryWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("FinanceRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant, AppRoles.Reception))
+            .AddPolicy("FinanceWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("LabOrdersRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
+            .AddPolicy("LabOrdersWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("InventoryRead", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("InventoryWrite", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("EmployeesRead", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("EmployeesWrite", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("ReferralsRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("ReferralsWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("BranchesRead", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("BranchesWrite", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("ReportsRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("UserManagement", policy =>
+                policy.RequireRole(AppRoles.Admin));
 
         services.AddSwaggerGen(c =>
         {

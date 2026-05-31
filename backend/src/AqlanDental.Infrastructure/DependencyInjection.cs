@@ -42,6 +42,7 @@ public static class DependencyInjection
 
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IUserManagementService, UserManagementService>();
         services.AddScoped<IClinicSettingsService, ClinicSettingsService>();
         services.AddScoped<IHealthCheckService, HealthCheckService>();
         services.AddScoped<IPatientService, PatientService>();
@@ -53,6 +54,18 @@ public static class DependencyInjection
         services.AddScoped<IClinicRoomService, ClinicRoomService>();
         services.AddScoped<IClinicalVisitService, ClinicalVisitService>();
         services.AddScoped<IClinicalProcedureService, ClinicalProcedureService>();
+        services.AddScoped<IDoctorScheduleService, DoctorScheduleService>();
+        services.AddScoped<IDoctorAccessService, DoctorAccessService>();
+        services.AddScoped<IClinicServiceService, ClinicServiceService>();
+        services.AddScoped<IGeneralDentistryService, GeneralDentistryService>();
+        services.AddScoped<IOrthodonticsService, OrthodonticsService>();
+        services.AddScoped<ISurgeryService, SurgeryService>();
+        services.AddScoped<IFinanceService, FinanceService>();
+        services.AddScoped<ILabOrderService, LabOrderService>();
+        services.AddScoped<IInventoryService, InventoryService>();
+        services.AddScoped<IEmployeeService, EmployeeService>();
+        services.AddScoped<IReferralService, ReferralService>();
+        services.AddScoped<IBranchService, BranchService>();
         services.AddScoped<InitialSeeder>();
 
         return services;

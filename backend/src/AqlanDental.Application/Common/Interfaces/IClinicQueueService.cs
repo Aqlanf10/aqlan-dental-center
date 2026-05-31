@@ -48,6 +48,28 @@ public record CallPatientRequest(string? Notes);
 
 public record EnterRoomRequest(Guid RoomId);
 
+public record PublicDisplayQueueItemDto(
+    int QueueNumber,
+    string PatientDisplayName,
+    string? PatientNumber,
+    string? RoomName,
+    int Status,
+    string StatusDisplay,
+    int Priority,
+    DateTime? CalledAt
+);
+
+public record PublicClinicDisplayDto(
+    string ClinicName,
+    DateOnly Date,
+    int WaitingCount,
+    int CalledCount,
+    int InRoomCount,
+    int CompletedCount,
+    PublicDisplayQueueItemDto? CurrentlyCalled,
+    List<PublicDisplayQueueItemDto> QueueItems
+);
+
 public interface IClinicQueueService
 {
     Task<TodayQueueDto> GetTodayQueueAsync(DateOnly? date);
@@ -58,4 +80,5 @@ public interface IClinicQueueService
     Task<ClinicQueueItemDto?> EnterRoomAsync(Guid queueItemId, EnterRoomRequest request, string userId);
     Task<ClinicQueueItemDto?> CompleteQueueItemAsync(Guid queueItemId, string userId);
     Task<ClinicQueueItemDto?> CancelQueueItemAsync(Guid queueItemId, string userId);
+    Task<PublicClinicDisplayDto> GetPublicDisplayAsync(DateOnly? date);
 }
