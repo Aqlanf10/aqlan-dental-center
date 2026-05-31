@@ -16,6 +16,10 @@ public class Patient
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public string? CreatedBy { get; set; }
     public string? UpdatedBy { get; set; }
+
+    // Navigation properties
+    public MedicalHistory? MedicalHistory { get; set; }
+    public DentalHistory? DentalHistory { get; set; }
 }
 
 public enum Gender

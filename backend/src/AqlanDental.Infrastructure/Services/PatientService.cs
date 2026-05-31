@@ -375,6 +375,174 @@ public class PatientService : IPatientService
         return new PatientTimelineDto(entries.OrderByDescending(e => e.Date).ToList());
     }
 
+    public async Task<MedicalHistoryDto?> GetMedicalHistoryAsync(Guid patientId)
+    {
+        var patient = await _context.Patients
+            .Include(p => p.MedicalHistory)
+            .FirstOrDefaultAsync(p => p.Id == patientId);
+
+        if (patient is null)
+            throw new DomainException("PATIENT_NOT_FOUND", "المريض غير موجود");
+
+        if (patient.MedicalHistory is null)
+            return null;
+
+        var mh = patient.MedicalHistory;
+        return new MedicalHistoryDto(
+            mh.ChronicDiseases,
+            mh.CurrentMedications,
+            mh.DrugAllergies,
+            mh.BleedingDisorders,
+            mh.IsPregnant,
+            mh.TmjProblems,
+            mh.PreviousSurgeries,
+            mh.Notes
+        );
+    }
+
+    public async Task<MedicalHistoryDto?> UpsertMedicalHistoryAsync(Guid patientId, UpsertMedicalHistoryRequest request, string userId)
+    {
+        var patient = await _context.Patients
+            .Include(p => p.MedicalHistory)
+            .Include(p => p.DentalHistory)
+            .FirstOrDefaultAsync(p => p.Id == patientId);
+
+        if (patient is null)
+            throw new DomainException("PATIENT_NOT_FOUND", "المريض غير موجود");
+
+        if (patient.MedicalHistory is null)
+        {
+            var medicalHistory = new MedicalHistory
+            {
+                Id = Guid.NewGuid(),
+                PatientId = patientId,
+                ChronicDiseases = request.ChronicDiseases,
+                CurrentMedications = request.CurrentMedications,
+                DrugAllergies = request.DrugAllergies,
+                BleedingDisorders = request.BleedingDisorders,
+                IsPregnant = request.IsPregnant,
+                TmjProblems = request.TmjProblems,
+                PreviousSurgeries = request.PreviousSurgeries,
+                Notes = request.Notes,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = userId,
+                UpdatedBy = userId
+            };
+
+            _context.MedicalHistories.Add(medicalHistory);
+        }
+        else
+        {
+            patient.MedicalHistory.ChronicDiseases = request.ChronicDiseases;
+            patient.MedicalHistory.CurrentMedications = request.CurrentMedications;
+            patient.MedicalHistory.DrugAllergies = request.DrugAllergies;
+            patient.MedicalHistory.BleedingDisorders = request.BleedingDisorders;
+            patient.MedicalHistory.IsPregnant = request.IsPregnant;
+            patient.MedicalHistory.TmjProblems = request.TmjProblems;
+            patient.MedicalHistory.PreviousSurgeries = request.PreviousSurgeries;
+            patient.MedicalHistory.Notes = request.Notes;
+            patient.MedicalHistory.UpdatedAt = DateTime.UtcNow;
+            patient.MedicalHistory.UpdatedBy = userId;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return new MedicalHistoryDto(
+            request.ChronicDiseases,
+            request.CurrentMedications,
+            request.DrugAllergies,
+            request.BleedingDisorders,
+            request.IsPregnant,
+            request.TmjProblems,
+            request.PreviousSurgeries,
+            request.Notes
+        );
+    }
+
+    public async Task<DentalHistoryDto?> GetDentalHistoryAsync(Guid patientId)
+    {
+        var patient = await _context.Patients
+            .Include(p => p.DentalHistory)
+            .FirstOrDefaultAsync(p => p.Id == patientId);
+
+        if (patient is null)
+            throw new DomainException("PATIENT_NOT_FOUND", "المريض غير موجود");
+
+        if (patient.DentalHistory is null)
+            return null;
+
+        var dh = patient.DentalHistory;
+        return new DentalHistoryDto(
+            dh.ChiefComplaint,
+            dh.PreviousTreatments,
+            dh.MouthBreathing,
+            dh.Bruxism,
+            dh.ThumbSucking,
+            dh.TongueThrusting,
+            dh.Notes
+        );
+    }
+
+    public async Task<DentalHistoryDto?> UpsertDentalHistoryAsync(Guid patientId, UpsertDentalHistoryRequest request, string userId)
+    {
+        var patient = await _context.Patients
+            .Include(p => p.MedicalHistory)
+            .Include(p => p.DentalHistory)
+            .FirstOrDefaultAsync(p => p.Id == patientId);
+
+        if (patient is null)
+            throw new DomainException("PATIENT_NOT_FOUND", "المريض غير موجود");
+
+        if (patient.DentalHistory is null)
+        {
+            var dentalHistory = new DentalHistory
+            {
+                Id = Guid.NewGuid(),
+                PatientId = patientId,
+                ChiefComplaint = request.ChiefComplaint,
+                PreviousTreatments = request.PreviousTreatments,
+                MouthBreathing = request.MouthBreathing,
+                Bruxism = request.Bruxism,
+                ThumbSucking = request.ThumbSucking,
+                TongueThrusting = request.TongueThrusting,
+                Notes = request.Notes,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CreatedBy = userId,
+                UpdatedBy = userId
+            };
+
+            _context.DentalHistories.Add(dentalHistory);
+        }
+        else
+        {
+            patient.DentalHistory.ChiefComplaint = request.ChiefComplaint;
+            patient.DentalHistory.PreviousTreatments = request.PreviousTreatments;
+            patient.DentalHistory.MouthBreathing = request.MouthBreathing;
+            patient.DentalHistory.Bruxism = request.Bruxism;
+            patient.DentalHistory.ThumbSucking = request.ThumbSucking;
+            patient.DentalHistory.TongueThrusting = request.TongueThrusting;
+            patient.DentalHistory.Notes = request.Notes;
+            patient.DentalHistory.UpdatedAt = DateTime.UtcNow;
+            patient.DentalHistory.UpdatedBy = userId;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return new DentalHistoryDto(
+            request.ChiefComplaint,
+            request.PreviousTreatments,
+            request.MouthBreathing,
+            request.Bruxism,
+            request.ThumbSucking,
+            request.TongueThrusting,
+            request.Notes
+        );
+    }
+
     private static PatientDto MapPatientToDto(Patient p) => new(
         p.Id, p.PatientNumber, p.FullName, (int)p.Gender,
         p.Gender == Gender.Male ? "ذكر" : "أنثى",

@@ -598,3 +598,47 @@ export interface AvailableDoctorDto {
   breakEndTime: string | null;
   defaultAppointmentDurationMinutes: number;
 }
+
+// Medical History
+export interface MedicalHistoryDto {
+  chronicDiseases: string | null;
+  currentMedications: string | null;
+  drugAllergies: string | null;
+  bleedingDisorders: boolean;
+  isPregnant: string | null;
+  tmjProblems: boolean;
+  previousSurgeries: string | null;
+  notes: string | null;
+}
+
+export interface UpsertMedicalHistoryRequest {
+  chronicDiseases?: string | null;
+  currentMedications?: string | null;
+  drugAllergies?: string | null;
+  bleedingDisorders?: boolean;
+  isPregnant?: string | null;
+  tmjProblems?: boolean;
+  previousSurgeries?: string | null;
+  notes?: string | null;
+}
+
+// Dental History
+export interface DentalHistoryDto {
+  chiefComplaint: string | null;
+  previousTreatments: string | null;
+  mouthBreathing: boolean;
+  bruxism: boolean;
+  thumbSucking: boolean;
+  tongueThrusting: boolean;
+  notes: string | null;
+}
+
+export interface UpsertDentalHistoryRequest {
+  chiefComplaint?: string | null;
+  previousTreatments?: string | null;
+  mouthBreathing?: boolean;
+  bruxism?: boolean;
+  thumbSucking?: boolean;
+  tongueThrusting?: boolean;
+  notes?: string | null;
+}

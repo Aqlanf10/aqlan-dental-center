@@ -2,6 +2,48 @@ using AqlanDental.Application.Common.Models;
 
 namespace AqlanDental.Application.Common.Interfaces;
 
+public record MedicalHistoryDto(
+    string? ChronicDiseases,
+    string? CurrentMedications,
+    string? DrugAllergies,
+    bool BleedingDisorders,
+    string? IsPregnant,
+    bool TmjProblems,
+    string? PreviousSurgeries,
+    string? Notes
+);
+
+public record DentalHistoryDto(
+    string? ChiefComplaint,
+    string? PreviousTreatments,
+    bool MouthBreathing,
+    bool Bruxism,
+    bool ThumbSucking,
+    bool TongueThrusting,
+    string? Notes
+);
+
+public record UpsertMedicalHistoryRequest(
+    string? ChronicDiseases,
+    string? CurrentMedications,
+    string? DrugAllergies,
+    bool BleedingDisorders,
+    string? IsPregnant,
+    bool TmjProblems,
+    string? PreviousSurgeries,
+    string? Notes
+);
+
+public record UpsertDentalHistoryRequest(
+    string? ChiefComplaint,
+    string? PreviousTreatments,
+    bool MouthBreathing,
+    bool Bruxism,
+    bool ThumbSucking,
+    bool TongueThrusting,
+    string? Notes
+);
+
 public record PatientDto(
     Guid Id,
     string PatientNumber,
@@ -78,4 +120,8 @@ public interface IPatientService
     Task<bool> SoftDeletePatientAsync(Guid id);
     Task<PatientSummaryDto?> GetPatientSummaryAsync(Guid id);
     Task<PatientTimelineDto> GetPatientTimelineAsync(Guid id);
+    Task<MedicalHistoryDto?> GetMedicalHistoryAsync(Guid patientId);
+    Task<MedicalHistoryDto?> UpsertMedicalHistoryAsync(Guid patientId, UpsertMedicalHistoryRequest request, string userId);
+    Task<DentalHistoryDto?> GetDentalHistoryAsync(Guid patientId);
+    Task<DentalHistoryDto?> UpsertDentalHistoryAsync(Guid patientId, UpsertDentalHistoryRequest request, string userId);
 }

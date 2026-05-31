@@ -26,6 +26,8 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
     public DbSet<ClinicalProcedure> ClinicalProcedures => Set<ClinicalProcedure>();
     public DbSet<DoctorWeeklySchedule> DoctorWeeklySchedules => Set<DoctorWeeklySchedule>();
+    public DbSet<MedicalHistory> MedicalHistories => Set<MedicalHistory>();
+    public DbSet<DentalHistory> DentalHistories => Set<DentalHistory>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -346,6 +348,39 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.IsAvailableForBooking);
             entity.HasIndex(e => e.IsActive);
             entity.HasIndex(e => new { e.DoctorId, e.DayOfWeek, e.IsActive });
+        });
+
+        builder.Entity<MedicalHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ChronicDiseases).HasMaxLength(2000);
+            entity.Property(e => e.CurrentMedications).HasMaxLength(2000);
+            entity.Property(e => e.DrugAllergies).HasMaxLength(1000);
+            entity.Property(e => e.IsPregnant).HasMaxLength(10);
+            entity.Property(e => e.PreviousSurgeries).HasMaxLength(2000);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithOne(p => p.MedicalHistory)
+                .HasForeignKey<MedicalHistory>(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.PatientId).IsUnique();
+        });
+
+        builder.Entity<DentalHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ChiefComplaint).HasMaxLength(2000);
+            entity.Property(e => e.PreviousTreatments).HasMaxLength(2000);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithOne(p => p.DentalHistory)
+                .HasForeignKey<DentalHistory>(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.PatientId).IsUnique();
         });
 
         SeedDefaultClinicSettings(builder);

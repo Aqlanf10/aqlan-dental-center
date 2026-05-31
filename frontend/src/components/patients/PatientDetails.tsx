@@ -13,6 +13,8 @@ import type {
 } from '../../types/api';
 import ConfirmDialog from '../common/ConfirmDialog';
 import LoadingState from '../common/LoadingState';
+import MedicalHistoryTab from './tabs/MedicalHistoryTab';
+import DentalHistoryTab from './tabs/DentalHistoryTab';
 
 interface PatientDetailsProps {
   patientId: string;
@@ -21,15 +23,17 @@ interface PatientDetailsProps {
 }
 
 const TABS = [
-  { id: 'info', label: 'البيانات الأساسية', enabled: true },
-  { id: 'appointments', label: 'المواعيد', enabled: true },
-  { id: 'dailyVisits', label: 'الزيارات اليومية', enabled: true },
-  { id: 'clinicalVisits', label: 'الزيارات السريرية', enabled: true },
-  { id: 'procedures', label: 'الإجراءات العلاجية', enabled: true },
-  { id: 'prescriptions', label: 'الوصفات', enabled: true },
-  { id: 'medicalHistory', label: 'التاريخ المرضي', enabled: false },
-  { id: 'dentalHistory', label: 'تاريخ الأسنان', enabled: false },
-  { id: 'finance', label: 'المالية', enabled: false },
+  { id: 'overview', label: 'نظرة عامة', enabled: true, group: 'عام' },
+  { id: 'info', label: 'البيانات الأساسية', enabled: true, group: 'عام' },
+  { id: 'medicalHistory', label: 'التاريخ المرضي', enabled: true, group: 'عام' },
+  { id: 'dentalHistory', label: 'تاريخ الأسنان', enabled: true, group: 'عام' },
+  { id: 'appointments', label: 'المواعيد', enabled: true, group: 'سريري' },
+  { id: 'dailyVisits', label: 'الزيارات اليومية', enabled: true, group: 'سريري' },
+  { id: 'clinicalVisits', label: 'الزيارات السريرية', enabled: true, group: 'سريري' },
+  { id: 'procedures', label: 'الإجراءات العلاجية', enabled: true, group: 'سريري' },
+  { id: 'prescriptions', label: 'الوصفات', enabled: true, group: 'سريري' },
+  { id: 'timeline', label: 'السجل الزمني', enabled: true, group: 'سجلات' },
+  { id: 'finance', label: 'المالية', enabled: false, group: 'مالي' },
 ];
 
 export default function PatientDetails({ patientId, canEdit, canDelete }: PatientDetailsProps) {
@@ -41,7 +45,7 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDelete, setShowDelete] = useState(false);
-  const [activeTab, setActiveTab] = useState('info');
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     async function fetchData() {
@@ -58,7 +62,7 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
   }, [patientId]);
 
   const loadTabData = useCallback(async (tabId: string) => {
-    if (tabId === 'info') return;
+    if (tabId === 'overview' || tabId === 'info' || tabId === 'medicalHistory' || tabId === 'dentalHistory') return;
     try {
       if (tabId === 'appointments') {
         const res = await api.get<PagedResult<AppointmentDto>>(`/appointments?patientId=${patientId}&pageSize=50`);
@@ -106,6 +110,14 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
   const procedures = timeline.filter((e) => e.type === 'procedure');
   const prescriptions = timeline.filter((e) => e.type === 'prescription');
 
+  // Group tabs by their group
+  const groups = TABS.reduce((acc, tab) => {
+    const group = tab.group || 'أخرى';
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(tab);
+    return acc;
+  }, {} as Record<string, typeof TABS>);
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -151,41 +163,58 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
         </div>
       </div>
 
+      {/* Quick Stats Bar */}
+      {summary && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <QuickStat label="المواعيد" value={summary.lastAppointment ? '1+' : '0'} color="bg-blue-50 text-blue-700" />
+          <QuickStat label="الزيارات السريرية" value={summary.totalClinicalVisits.toString()} color="bg-green-50 text-green-700" />
+          <QuickStat label="الإجراءات" value={summary.latestProcedures.length.toString()} color="bg-orange/5 text-orange" />
+          <QuickStat label="الوصفات" value={summary.latestPrescriptions.length.toString()} color="bg-purple-50 text-purple-700" />
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => tab.enabled && setActiveTab(tab.id)}
-            className={`relative whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? 'text-navy'
-                : tab.enabled
-                ? 'text-gray-500 hover:text-navy'
-                : 'cursor-not-allowed text-gray-400'
-            }`}
-            disabled={!tab.enabled}
-          >
-            {tab.label}
-            {!tab.enabled && (
-              <span className="mr-2 rounded-full bg-orange/20 px-2 py-0.5 text-[10px] text-orange">قريبًا</span>
-            )}
-            {activeTab === tab.id && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy" />
-            )}
-          </button>
+        {Object.entries(groups).map(([groupName, tabs], gi) => (
+          <div key={groupName} className="flex items-center">
+            {gi > 0 && <div className="mx-1 h-6 w-px bg-gray-300" />}
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => tab.enabled && setActiveTab(tab.id)}
+                className={`relative whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? 'text-navy'
+                    : tab.enabled
+                    ? 'text-gray-500 hover:text-navy'
+                    : 'cursor-not-allowed text-gray-400'
+                }`}
+                disabled={!tab.enabled}
+              >
+                {tab.label}
+                {!tab.enabled && (
+                  <span className="mr-2 rounded-full bg-orange/20 px-2 py-0.5 text-[10px] text-orange">قريبًا</span>
+                )}
+                {activeTab === tab.id && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy" />
+                )}
+              </button>
+            ))}
+          </div>
         ))}
       </div>
 
       {/* Tab Content */}
+      {activeTab === 'overview' && <OverviewTab patient={patient} summary={summary} timeline={timeline} />}
       {activeTab === 'info' && <InfoTab patient={patient} />}
+      {activeTab === 'medicalHistory' && <MedicalHistoryTab patientId={patientId} canEdit={canEdit} />}
+      {activeTab === 'dentalHistory' && <DentalHistoryTab patientId={patientId} canEdit={canEdit} />}
       {activeTab === 'appointments' && <AppointmentsTab appointments={appointments} />}
       {activeTab === 'dailyVisits' && <DailyVisitsTab timeline={timeline} />}
       {activeTab === 'clinicalVisits' && <ClinicalVisitsTab entries={clinicalVisits} />}
       {activeTab === 'procedures' && <ProceduresTab entries={procedures} />}
       {activeTab === 'prescriptions' && <PrescriptionsTab entries={prescriptions} summary={summary} />}
-      {activeTab === 'medicalHistory' && <DisabledTabPlaceholder />}
-      {activeTab === 'dentalHistory' && <DisabledTabPlaceholder />}
+      {activeTab === 'timeline' && <TimelineViewTab entries={timeline} />}
       {activeTab === 'finance' && <DisabledTabPlaceholder />}
 
       <ConfirmDialog
@@ -198,6 +227,93 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
         onCancel={() => setShowDelete(false)}
         variant="danger"
       />
+    </div>
+  );
+}
+
+function QuickStat({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div className={`rounded-lg px-4 py-3 ${color}`}>
+      <p className="text-2xl font-bold">{value}</p>
+      <p className="text-xs font-medium opacity-80">{label}</p>
+    </div>
+  );
+}
+
+function OverviewTab({ patient, summary: _s, timeline }: { patient: PatientDto; summary: PatientSummaryDto | null; timeline: TimelineEntryDto[] }) {
+  void _s;
+  return (
+    <div className="space-y-6">
+      {/* Patient Quick Info */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-xl font-bold text-blue-700">
+              {patient.fullName.charAt(0)}
+            </div>
+            <div>
+              <p className="font-bold text-navy">{patient.fullName}</p>
+              <p className="text-sm text-gray-500">{patient.patientNumber}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-medium text-gray-500">معلومات الاتصال</p>
+          <p className="mt-1 text-sm font-medium text-navy" dir="ltr">{patient.phoneNumber}</p>
+          {patient.whatsAppNumber && (
+            <p className="text-sm text-green-600" dir="ltr">{patient.whatsAppNumber}</p>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-medium text-gray-500">معلومات أساسية</p>
+          <div className="mt-1 flex gap-3 text-sm">
+            <span className="font-medium text-navy">{patient.genderDisplay}</span>
+            {patient.dateOfBirth && (
+              <span className="text-gray-500">
+                {new Date(patient.dateOfBirth).toLocaleDateString('ar-SA')}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      {timeline.length > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <h3 className="mb-3 font-bold text-navy">النشاط الأخير</h3>
+          <div className="space-y-3">
+            {timeline.slice(0, 5).map((entry) => (
+              <div key={`${entry.type}-${entry.id}`} className="flex items-center justify-between border-b border-gray-100 pb-2 last:border-0">
+                <div className="flex items-center gap-3">
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
+                    entry.type === 'clinicalVisit' ? 'bg-green-100 text-green-700'
+                    : entry.type === 'procedure' ? 'bg-orange/10 text-orange'
+                    : entry.type === 'prescription' ? 'bg-purple-100 text-purple-700'
+                    : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {entry.type === 'clinicalVisit' ? 'س'
+                    : entry.type === 'procedure' ? 'ع'
+                    : entry.type === 'prescription' ? 'و'
+                    : 'م'}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-navy">{entry.title}</p>
+                    {entry.subtitle && <p className="text-xs text-gray-500">{entry.subtitle}</p>}
+                  </div>
+                </div>
+                <div className="text-left">
+                  <p className="text-xs text-gray-400">{new Date(entry.date).toLocaleDateString('ar-SA')}</p>
+                  {entry.statusDisplay && (
+                    <span className="text-xs font-medium text-gray-500">{entry.statusDisplay}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -391,6 +507,46 @@ function PrescriptionsTab({ entries, summary }: { entries: TimelineEntryDto[]; s
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function TimelineViewTab({ entries }: { entries: TimelineEntryDto[] }) {
+  if (entries.length === 0) {
+    return <EmptyTab message="لا توجد أحداث في السجل الزمني" />;
+  }
+  return (
+    <div className="space-y-3">
+      {entries.map((entry) => {
+        const iconMap: Record<string, { bg: string; text: string; label: string }> = {
+          appointment: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'م' },
+          dailyVisit: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'ي' },
+          clinicalVisit: { bg: 'bg-green-100', text: 'text-green-700', label: 'س' },
+          procedure: { bg: 'bg-orange/10', text: 'text-orange', label: 'ع' },
+          prescription: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'و' },
+        };
+        const icon = iconMap[entry.type] || { bg: 'bg-gray-100', text: 'text-gray-700', label: '?' };
+
+        return (
+          <div key={`${entry.type}-${entry.id}`} className="flex items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${icon.bg} ${icon.text}`}>
+              {icon.label}
+            </span>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-navy">{entry.title}</p>
+                <p className="text-xs text-gray-400">{new Date(entry.date).toLocaleDateString('ar-SA')}</p>
+              </div>
+              {entry.subtitle && <p className="mt-0.5 text-sm text-gray-500">{entry.subtitle}</p>}
+              {entry.statusDisplay && (
+                <span className="mt-1 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                  {entry.statusDisplay}
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

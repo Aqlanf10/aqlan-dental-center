@@ -80,4 +80,38 @@ public class PatientsController : ControllerBase
         if (!result) return NotFound(new { message = "المريض غير موجود" });
         return Ok(new { message = "تم حذف المريض بنجاح" });
     }
+
+    [HttpGet("{id:guid}/medical-history")]
+    [Authorize(Policy = "PatientRead")]
+    public async Task<ActionResult<MedicalHistoryDto>> GetMedicalHistory(Guid id)
+    {
+        var medicalHistory = await _patientService.GetMedicalHistoryAsync(id);
+        return Ok(medicalHistory);
+    }
+
+    [HttpPut("{id:guid}/medical-history")]
+    [Authorize(Policy = "PatientWrite")]
+    public async Task<ActionResult<MedicalHistoryDto>> UpsertMedicalHistory(Guid id, UpsertMedicalHistoryRequest request)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var medicalHistory = await _patientService.UpsertMedicalHistoryAsync(id, request, userId!);
+        return Ok(medicalHistory);
+    }
+
+    [HttpGet("{id:guid}/dental-history")]
+    [Authorize(Policy = "PatientRead")]
+    public async Task<ActionResult<DentalHistoryDto>> GetDentalHistory(Guid id)
+    {
+        var dentalHistory = await _patientService.GetDentalHistoryAsync(id);
+        return Ok(dentalHistory);
+    }
+
+    [HttpPut("{id:guid}/dental-history")]
+    [Authorize(Policy = "PatientWrite")]
+    public async Task<ActionResult<DentalHistoryDto>> UpsertDentalHistory(Guid id, UpsertDentalHistoryRequest request)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var dentalHistory = await _patientService.UpsertDentalHistoryAsync(id, request, userId!);
+        return Ok(dentalHistory);
+    }
 }
