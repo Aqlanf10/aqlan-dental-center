@@ -10,6 +10,7 @@ interface Props {
   onComplete: (id: string) => void;
   onCancel: (id: string) => void;
   onChangePriority: (id: string, priority: number) => void;
+  onOpenClinicalVisit: (dailyVisitId: string) => void;
   canEdit: boolean;
   isDoctor: boolean;
 }
@@ -20,7 +21,7 @@ const terminalStatuses = new Set<number>([
   QueueStatusEnum.NoShow,
 ]);
 
-export default function QueueItemCard({ item, onCall, onEnterRoom, onComplete, onCancel, onChangePriority, canEdit, isDoctor }: Props) {
+export default function QueueItemCard({ item, onCall, onEnterRoom, onComplete, onCancel, onChangePriority, onOpenClinicalVisit, canEdit, isDoctor }: Props) {
   const isTerminal = terminalStatuses.has(item.status);
 
   return (
@@ -98,13 +99,13 @@ export default function QueueItemCard({ item, onCall, onEnterRoom, onComplete, o
         </div>
       )}
 
-      {isDoctor && !isTerminal && (
+      {!isTerminal && (item.status === QueueStatusEnum.InRoom || item.status === QueueStatusEnum.InProgress) && (canEdit || isDoctor) && (
         <div className="mt-3 border-t border-gray-100 pt-3">
           <button
-            disabled
-            className="cursor-not-allowed rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-400"
+            onClick={() => onOpenClinicalVisit(item.dailyVisitId)}
+            className="rounded-md bg-orange px-3 py-1 text-xs font-medium text-white hover:bg-orange-600"
           >
-            فتح الزيارة السريرية — قريبًا
+            فتح الزيارة السريرية
           </button>
         </div>
       )}

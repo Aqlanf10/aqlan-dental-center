@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { TodayQueueDto, ClinicRoomDto, QueueStatusEnum } from '@/types/api';
+import { TodayQueueDto, ClinicRoomDto, QueueStatusEnum, ClinicalVisitDto } from '@/types/api';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/auth/AuthContext';
 import QueueStats from './QueueStats';
 import QueueItemCard from './QueueItemCard';
+import ClinicalVisitEditor from '@/components/clinical-visits/ClinicalVisitEditor';
 
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -31,6 +32,7 @@ export default function ClinicQueueBoard() {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [enterRoomModal, setEnterRoomModal] = useState<{ queueItemId: string; rooms: ClinicRoomDto[] } | null>(null);
+  const [clinicalVisit, setClinicalVisit] = useState<ClinicalVisitDto | null>(null);
 
   const userRole = user?.role || '';
   const canEdit = ['Admin', 'Reception'].includes(userRole);
@@ -105,6 +107,24 @@ export default function ClinicQueueBoard() {
     } catch (err: unknown) { alert(getErrorMessage(err)); }
   };
 
+  const handleOpenClinicalVisit = async (dailyVisitId: string) => {
+    try {
+      // Check if a clinical visit already exists
+      const existing = await api.get<ClinicalVisitDto>(`/clinical-visits/by-daily-visit/${dailyVisitId}`);
+      if (existing.data) {
+        setClinicalVisit(existing.data);
+        return;
+      }
+    } catch {
+      // 404 means no existing visit — proceed to create
+    }
+    try {
+      const res = await api.post<ClinicalVisitDto>(`/clinical-visits/daily-visits/${dailyVisitId}/start`, {});
+      setClinicalVisit(res.data);
+      await fetchData();
+    } catch (err: unknown) { alert(getErrorMessage(err)); }
+  };
+
   if (loading && !data) {
     return <div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-orange border-t-transparent" /></div>;
   }
@@ -134,13 +154,21 @@ export default function ClinicQueueBoard() {
       {filteredItems.length > 0 ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filteredItems.map(item => (
-            <QueueItemCard key={item.id} item={item} onCall={handleCall} onEnterRoom={handleEnterRoom} onComplete={handleComplete} onCancel={handleCancel} onChangePriority={handleChangePriority} canEdit={canEdit} isDoctor={isDoctor} />
+            <QueueItemCard key={item.id} item={item} onCall={handleCall} onEnterRoom={handleEnterRoom} onComplete={handleComplete} onCancel={handleCancel} onChangePriority={handleChangePriority} onOpenClinicalVisit={handleOpenClinicalVisit} canEdit={canEdit} isDoctor={isDoctor} />
           ))}
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
           <p className="text-sm text-gray-500">لا توجد عناصر في الطابور لهذا اليوم</p>
         </div>
+      )}
+
+      {clinicalVisit && (
+        <ClinicalVisitEditor
+          visit={clinicalVisit}
+          onClose={() => { setClinicalVisit(null); fetchData(); }}
+          onUpdated={fetchData}
+        />
       )}
 
       {enterRoomModal && (

@@ -22,6 +22,8 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<DailyVisit> DailyVisits => Set<DailyVisit>();
     public DbSet<ClinicRoom> ClinicRooms => Set<ClinicRoom>();
     public DbSet<ClinicQueueItem> ClinicQueueItems => Set<ClinicQueueItem>();
+    public DbSet<ClinicalVisit> ClinicalVisits => Set<ClinicalVisit>();
+    public DbSet<Prescription> Prescriptions => Set<Prescription>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -213,6 +215,76 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.RoomId);
             entity.HasIndex(e => e.IsActive);
             entity.HasIndex(e => new { e.QueueDate, e.QueueNumber }).IsUnique();
+        });
+
+        builder.Entity<ClinicalVisit>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.VisitDate).IsRequired();
+            entity.Property(e => e.ChiefComplaint).HasMaxLength(1000);
+            entity.Property(e => e.ClinicalFindings).HasMaxLength(3000);
+            entity.Property(e => e.Diagnosis).HasMaxLength(2000);
+            entity.Property(e => e.TreatmentNotes).HasMaxLength(3000);
+            entity.Property(e => e.DoctorRecommendations).HasMaxLength(2000);
+
+            entity.HasOne(e => e.DailyVisit)
+                .WithMany()
+                .HasForeignKey(e => e.DailyVisitId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ClinicQueueItem)
+                .WithMany()
+                .HasForeignKey(e => e.ClinicQueueItemId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(e => e.Prescriptions)
+                .WithOne(p => p.ClinicalVisit)
+                .HasForeignKey(p => p.ClinicalVisitId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.DailyVisitId);
+            entity.HasIndex(e => e.ClinicQueueItemId);
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.VisitDate);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<Prescription>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.MedicationName).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.Dosage).HasMaxLength(300);
+            entity.Property(e => e.Frequency).HasMaxLength(300);
+            entity.Property(e => e.Duration).HasMaxLength(300);
+            entity.Property(e => e.Instructions).HasMaxLength(1000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.ClinicalVisitId);
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.IsActive);
         });
 
         SeedDefaultClinicSettings(builder);
