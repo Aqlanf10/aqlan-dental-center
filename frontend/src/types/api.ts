@@ -375,6 +375,7 @@ export interface ClinicalVisitDto {
   nextVisitRecommended: boolean;
   nextVisitDate: string | null;
   prescriptions: PrescriptionDto[];
+  procedures: ClinicalProcedureDto[];
   createdAt: string;
   updatedAt: string;
 }
@@ -425,4 +426,71 @@ export interface UpdatePrescriptionRequest {
   frequency?: string | null;
   duration?: string | null;
   instructions?: string | null;
+}
+
+// Clinical Procedure
+export const ClinicalProcedureTypeEnum = {
+  Consultation: 0,
+  Filling: 1,
+  Extraction: 2,
+  Scaling: 3,
+  RootCanal: 4,
+  Crown: 5,
+  Prosthodontic: 6,
+  Other: 99,
+} as const;
+
+export const ClinicalProcedureStatusEnum = {
+  Planned: 0,
+  InProgress: 1,
+  Completed: 2,
+  Cancelled: 3,
+} as const;
+
+export interface ClinicalProcedureDto {
+  id: string;
+  clinicalVisitId: string;
+  patientId: string;
+  patientName: string;
+  patientNumber: string | null;
+  doctorId: string;
+  doctorName: string | null;
+  procedureType: number;
+  procedureTypeDisplay: string;
+  toothNumber: string | null;
+  toothSurface: string | null;
+  title: string;
+  description: string | null;
+  clinicalNotes: string | null;
+  status: number;
+  statusDisplay: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateClinicalProcedureRequest {
+  procedureType: number;
+  toothNumber?: string | null;
+  toothSurface?: string | null;
+  title: string;
+  description?: string | null;
+  clinicalNotes?: string | null;
+  status?: number | null;
+}
+
+export interface UpdateClinicalProcedureRequest {
+  procedureType?: number | null;
+  toothNumber?: string | null;
+  toothSurface?: string | null;
+  title?: string | null;
+  description?: string | null;
+  clinicalNotes?: string | null;
+  status?: number | null;
+}
+
+export interface UpdateClinicalProcedureStatusRequest {
+  status: number;
 }

@@ -30,6 +30,7 @@ public class ClinicalVisit
     public Patient Patient { get; set; } = null!;
     public Doctor Doctor { get; set; } = null!;
     public ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
+    public ICollection<ClinicalProcedure> Procedures { get; set; } = new List<ClinicalProcedure>();
 }
 
 public enum ClinicalVisitStatus

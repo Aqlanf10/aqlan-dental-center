@@ -97,6 +97,10 @@ public static class ServiceCollectionExtensions
             .AddPolicy("ClinicalVisitsCancel", policy =>
                 policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
             .AddPolicy("PrescriptionsWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("ClinicalProceduresRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
+            .AddPolicy("ClinicalProceduresWrite", policy =>
                 policy.RequireRole(AppRoles.Admin, AppRoles.Doctor));
 
         services.AddSwaggerGen(c =>

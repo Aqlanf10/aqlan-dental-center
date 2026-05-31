@@ -3,6 +3,7 @@ using System;
 using AqlanDental.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AqlanDental.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AqlanDentalDbContext))]
-    partial class AqlanDentalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260531150934_AddClinicalProcedures")]
+    partial class AddClinicalProcedures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.18");
