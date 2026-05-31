@@ -24,6 +24,12 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import LoadingState from '../common/LoadingState';
 import MedicalHistoryTab from './tabs/MedicalHistoryTab';
 import DentalHistoryTab from './tabs/DentalHistoryTab';
+import OrthodonticsTab from './tabs/OrthodonticsTab';
+import SurgeryTab from './tabs/SurgeryTab';
+import TreatmentPlanTab from './tabs/TreatmentPlanTab';
+import ReferralsTab from './tabs/ReferralsTab';
+import LabOrdersTab from './tabs/LabOrdersTab';
+import GeneralDentistryTab from './tabs/GeneralDentistryTab';
 
 interface PatientDetailsProps {
   patientId: string;
@@ -41,8 +47,19 @@ const TABS = [
   { id: 'clinicalVisits', label: 'الزيارات السريرية', enabled: true, group: 'سريري' },
   { id: 'procedures', label: 'الإجراءات العلاجية', enabled: true, group: 'سريري' },
   { id: 'prescriptions', label: 'الوصفات', enabled: true, group: 'سريري' },
+  { id: 'generalDentistry', label: 'طب الأسنان العام', enabled: true, group: 'سريري' },
+  { id: 'orthodontics', label: 'التقويم', enabled: true, group: 'سريري' },
+  { id: 'surgery', label: 'الجراحة', enabled: true, group: 'سريري' },
+  { id: 'treatmentPlan', label: 'خطة العلاج', enabled: true, group: 'سريري' },
   { id: 'timeline', label: 'السجل الزمني', enabled: true, group: 'سجلات' },
+  { id: 'referrals', label: 'الإحالات', enabled: true, group: 'سجلات' },
+  { id: 'labOrders', label: 'طلبات المختبر', enabled: true, group: 'سجلات' },
+  { id: 'photos', label: 'الصور', enabled: false, group: 'سجلات' },
+  { id: 'radiographs', label: 'الأشعة', enabled: false, group: 'سجلات' },
+  { id: 'documents', label: 'المستندات', enabled: false, group: 'سجلات' },
   { id: 'finance', label: 'المالية', enabled: true, group: 'مالي' },
+  { id: 'messages', label: 'الرسائل', enabled: false, group: 'تواصل' },
+  { id: 'portalAccess', label: 'بوابة المريض', enabled: false, group: 'بوابة' },
 ];
 
 export default function PatientDetails({ patientId, canEdit, canDelete }: PatientDetailsProps) {
@@ -223,7 +240,13 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
       {activeTab === 'clinicalVisits' && <ClinicalVisitsTab entries={clinicalVisits} />}
       {activeTab === 'procedures' && <ProceduresTab entries={procedures} />}
       {activeTab === 'prescriptions' && <PrescriptionsTab entries={prescriptions} summary={summary} />}
+      {activeTab === 'generalDentistry' && <GeneralDentistryTab patientId={patientId} />}
+      {activeTab === 'orthodontics' && <OrthodonticsTab patientId={patientId} />}
+      {activeTab === 'surgery' && <SurgeryTab patientId={patientId} />}
+      {activeTab === 'treatmentPlan' && <TreatmentPlanTab patientId={patientId} canEdit={canEdit} />}
       {activeTab === 'timeline' && <TimelineViewTab entries={timeline} />}
+      {activeTab === 'referrals' && <ReferralsTab patientId={patientId} />}
+      {activeTab === 'labOrders' && <LabOrdersTab patientId={patientId} />}
       {activeTab === 'finance' && <FinanceTab patientId={patientId} />}
 
       <ConfirmDialog
