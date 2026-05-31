@@ -34,6 +34,10 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ToothCondition> ToothConditions => Set<ToothCondition>();
     public DbSet<GeneralTreatment> GeneralTreatments => Set<GeneralTreatment>();
     public DbSet<TreatmentPlanStep> TreatmentPlanSteps => Set<TreatmentPlanStep>();
+    public DbSet<OrthoCase> OrthoCases => Set<OrthoCase>();
+    public DbSet<OrthoVisit> OrthoVisits => Set<OrthoVisit>();
+    public DbSet<TreatmentStage> TreatmentStages => Set<TreatmentStage>();
+    public DbSet<SurgeryCase> SurgeryCases => Set<SurgeryCase>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -523,6 +527,121 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => new { e.PatientId, e.SequenceNumber });
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.Priority);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<OrthoCase>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CaseNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ApplianceType).HasMaxLength(200);
+            entity.Property(e => e.CurrentStage).HasMaxLength(200);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.TotalFee).HasPrecision(12, 2);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany(p => p.OrthoCases)
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(e => e.Visits)
+                .WithOne(v => v.OrthoCase)
+                .HasForeignKey(v => v.OrthoCaseId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.Stages)
+                .WithOne(s => s.OrthoCase)
+                .HasForeignKey(s => s.OrthoCaseId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.CaseNumber).IsUnique();
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<OrthoVisit>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.VisitType).HasMaxLength(200);
+            entity.Property(e => e.CurrentStage).HasMaxLength(200);
+            entity.Property(e => e.WireUpper).HasMaxLength(200);
+            entity.Property(e => e.WireLower).HasMaxLength(200);
+            entity.Property(e => e.ElasticsType).HasMaxLength(200);
+            entity.Property(e => e.ClinicalNotes).HasMaxLength(3000);
+            entity.Property(e => e.PatientInstructions).HasMaxLength(2000);
+
+            entity.HasOne(e => e.OrthoCase)
+                .WithMany(c => c.Visits)
+                .HasForeignKey(e => e.OrthoCaseId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.OrthoCaseId);
+            entity.HasIndex(e => e.VisitDate);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<TreatmentStage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.StageName).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+            entity.Property(e => e.Status).IsRequired();
+
+            entity.HasOne(e => e.OrthoCase)
+                .WithMany(c => c.Stages)
+                .HasForeignKey(e => e.OrthoCaseId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.OrthoCaseId);
+            entity.HasIndex(e => e.StageOrder);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<SurgeryCase>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CaseNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.SurgeryType).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.TeethInvolved).HasMaxLength(200);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.SurgeryLocation).HasMaxLength(200);
+            entity.Property(e => e.AnesthesiaType).HasMaxLength(200);
+            entity.Property(e => e.PreopNotes).HasMaxLength(3000);
+            entity.Property(e => e.OperativeNotes).HasMaxLength(3000);
+            entity.Property(e => e.PostopInstructions).HasMaxLength(3000);
+            entity.Property(e => e.Complications).HasMaxLength(2000);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany(p => p.SurgeryCases)
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.CaseNumber).IsUnique();
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.SurgeryDate);
             entity.HasIndex(e => e.IsActive);
         });
 

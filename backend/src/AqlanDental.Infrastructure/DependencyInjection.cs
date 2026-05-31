@@ -57,6 +57,8 @@ public static class DependencyInjection
         services.AddScoped<IDoctorAccessService, DoctorAccessService>();
         services.AddScoped<IClinicServiceService, ClinicServiceService>();
         services.AddScoped<IGeneralDentistryService, GeneralDentistryService>();
+        services.AddScoped<IOrthodonticsService, OrthodonticsService>();
+        services.AddScoped<ISurgeryService, SurgeryService>();
         services.AddScoped<InitialSeeder>();
 
         return services;

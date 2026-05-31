@@ -879,3 +879,181 @@ export interface UpdateTreatmentPlanStepRequest {
   estimatedCost?: number | null;
   notes?: string | null;
 }
+
+// Orthodontics
+export const OrthoCaseStatusEnum = {
+  Active: 0, Completed: 1, OnHold: 2, Cancelled: 3,
+} as const;
+
+export const OrthoCaseStatusLabels: Record<number, string> = {
+  0: 'نشط', 1: 'مكتمل', 2: 'معلق', 3: 'ملغي',
+};
+
+export const OrthoCaseStatusColors: Record<number, string> = {
+  0: 'bg-green-100 text-green-700',
+  1: 'bg-blue-100 text-blue-700',
+  2: 'bg-yellow-100 text-yellow-700',
+  3: 'bg-red-100 text-red-700',
+};
+
+export interface OrthoVisitDto {
+  id: string;
+  orthoCaseId: string;
+  visitNumber: number;
+  visitDate: string;
+  visitType: string | null;
+  currentStage: string | null;
+  wireUpper: string | null;
+  wireLower: string | null;
+  elasticsType: string | null;
+  clinicalNotes: string | null;
+  patientInstructions: string | null;
+  nextAppointmentDate: string | null;
+  doctorId: string | null;
+  doctorName: string | null;
+  createdAt: string;
+}
+
+export interface TreatmentStageDto {
+  id: string;
+  orthoCaseId: string;
+  stageName: string;
+  stageOrder: number;
+  startedAt: string | null;
+  completedAt: string | null;
+  targetDurationMonths: number | null;
+  notes: string | null;
+  status: number;
+  statusDisplay: string;
+}
+
+export interface OrthoCaseDto {
+  id: string;
+  caseNumber: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string | null;
+  doctorName: string | null;
+  applianceType: string | null;
+  startDate: string | null;
+  expectedDurationMonths: number | null;
+  currentStage: string | null;
+  stagePercentage: number;
+  status: number;
+  statusDisplay: string;
+  totalFee: number | null;
+  notes: string | null;
+  visits: OrthoVisitDto[];
+  stages: TreatmentStageDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateOrthoCaseRequest {
+  patientId: string;
+  doctorId?: string | null;
+  applianceType?: string | null;
+  startDate?: string | null;
+  expectedDurationMonths?: number | null;
+  totalFee?: number | null;
+  notes?: string | null;
+}
+
+export interface UpdateOrthoCaseRequest {
+  applianceType?: string | null;
+  startDate?: string | null;
+  expectedDurationMonths?: number | null;
+  currentStage?: string | null;
+  stagePercentage?: number | null;
+  status?: number | null;
+  totalFee?: number | null;
+  notes?: string | null;
+}
+
+export interface AddOrthoVisitRequest {
+  visitType?: string | null;
+  currentStage?: string | null;
+  wireUpper?: string | null;
+  wireLower?: string | null;
+  elasticsType?: string | null;
+  clinicalNotes?: string | null;
+  patientInstructions?: string | null;
+  nextAppointmentDate?: string | null;
+  doctorId?: string | null;
+}
+
+export interface UpdateTreatmentStageRequest {
+  stageName?: string | null;
+  status?: number | null;
+  notes?: string | null;
+}
+
+// Surgery
+export const SurgeryCaseStatusEnum = {
+  Scheduled: 0, InProgress: 1, Completed: 2, Cancelled: 3,
+} as const;
+
+export const SurgeryCaseStatusLabels: Record<number, string> = {
+  0: 'مجدول', 1: 'جارٍ', 2: 'مكتمل', 3: 'ملغي',
+};
+
+export const SurgeryCaseStatusColors: Record<number, string> = {
+  0: 'bg-blue-100 text-blue-700',
+  1: 'bg-yellow-100 text-yellow-700',
+  2: 'bg-green-100 text-green-700',
+  3: 'bg-red-100 text-red-700',
+};
+
+export interface SurgeryCaseDto {
+  id: string;
+  caseNumber: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string | null;
+  doctorName: string | null;
+  surgeryType: string;
+  teethInvolved: string | null;
+  status: number;
+  statusDisplay: string;
+  surgeryDate: string | null;
+  surgeryLocation: string | null;
+  anesthesiaType: string | null;
+  preopNotes: string | null;
+  operativeNotes: string | null;
+  postopInstructions: string | null;
+  complications: string | null;
+  followupDate: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSurgeryCaseRequest {
+  patientId: string;
+  doctorId?: string | null;
+  surgeryType: string;
+  teethInvolved?: string | null;
+  surgeryDate?: string | null;
+  surgeryLocation?: string | null;
+  anesthesiaType?: string | null;
+  preopNotes?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateSurgeryCaseRequest {
+  surgeryType?: string | null;
+  teethInvolved?: string | null;
+  surgeryDate?: string | null;
+  surgeryLocation?: string | null;
+  anesthesiaType?: string | null;
+  preopNotes?: string | null;
+  operativeNotes?: string | null;
+  postopInstructions?: string | null;
+  complications?: string | null;
+  followupDate?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateSurgeryStatusRequest {
+  status: number;
+}

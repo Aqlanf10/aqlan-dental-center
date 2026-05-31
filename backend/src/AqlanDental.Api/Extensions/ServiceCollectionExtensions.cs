@@ -113,6 +113,14 @@ public static class ServiceCollectionExtensions
             .AddPolicy("GeneralDentistryRead", policy =>
                 policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
             .AddPolicy("GeneralDentistryWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("OrthodonticsRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
+            .AddPolicy("OrthodonticsWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("SurgeryRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
+            .AddPolicy("SurgeryWrite", policy =>
                 policy.RequireRole(AppRoles.Admin, AppRoles.Doctor));
 
         services.AddSwaggerGen(c =>
