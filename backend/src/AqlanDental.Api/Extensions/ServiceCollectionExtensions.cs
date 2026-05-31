@@ -125,6 +125,28 @@ public static class ServiceCollectionExtensions
             .AddPolicy("FinanceRead", policy =>
                 policy.RequireRole(AppRoles.Admin, AppRoles.Accountant, AppRoles.Reception))
             .AddPolicy("FinanceWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("LabOrdersRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception))
+            .AddPolicy("LabOrdersWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("InventoryRead", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("InventoryWrite", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("EmployeesRead", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("EmployeesWrite", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("ReferralsRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("ReferralsWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor))
+            .AddPolicy("BranchesRead", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("BranchesWrite", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("ReportsRead", policy =>
                 policy.RequireRole(AppRoles.Admin, AppRoles.Accountant));
 
         services.AddSwaggerGen(c =>

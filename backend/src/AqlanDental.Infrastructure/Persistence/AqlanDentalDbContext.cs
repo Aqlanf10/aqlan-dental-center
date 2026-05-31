@@ -45,6 +45,11 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CashierSession> CashierSessions => Set<CashierSession>();
     public DbSet<Treasury> Treasuries => Set<Treasury>();
     public DbSet<CashFlowTransaction> CashFlowTransactions => Set<CashFlowTransaction>();
+    public DbSet<LabOrder> LabOrders => Set<LabOrder>();
+    public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+    public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<Referral> Referrals => Set<Referral>();
+    public DbSet<Branch> Branches => Set<Branch>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -841,6 +846,102 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.TransactionDate);
             entity.HasIndex(e => e.CashierSessionId);
             entity.HasIndex(e => e.TreasuryId);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        // ─── Sprint 15-20 Entities ──────────────────────────────────────────
+
+        builder.Entity<LabOrder>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OrderNumber).HasMaxLength(50);
+            entity.Property(e => e.ApplianceType).HasMaxLength(200);
+            entity.Property(e => e.LabName).HasMaxLength(200);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.Priority).IsRequired();
+            entity.Property(e => e.Instructions).HasMaxLength(2000);
+            entity.Property(e => e.Cost).HasPrecision(12, 2);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.OrderNumber).IsUnique();
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<InventoryItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Category).HasMaxLength(100);
+            entity.Property(e => e.Unit).HasMaxLength(50);
+            entity.Property(e => e.CostPerUnit).HasPrecision(12, 2);
+            entity.Property(e => e.BatchNumber).HasMaxLength(100);
+
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<Employee>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FullName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Phone).HasMaxLength(20);
+            entity.Property(e => e.Position).HasMaxLength(200);
+            entity.Property(e => e.BaseSalary).HasPrecision(12, 2);
+            entity.Property(e => e.EmergencyContact).HasMaxLength(200);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<Referral>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Reason).HasMaxLength(1000);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+            entity.Property(e => e.Status).IsRequired();
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.FromDoctor)
+                .WithMany()
+                .HasForeignKey(e => e.FromDoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ToDoctor)
+                .WithMany()
+                .HasForeignKey(e => e.ToDoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.FromDoctorId);
+            entity.HasIndex(e => e.ToDoctorId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<Branch>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Address).HasMaxLength(500);
+            entity.Property(e => e.Phone).HasMaxLength(20);
+
             entity.HasIndex(e => e.IsActive);
         });
 

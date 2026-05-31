@@ -1149,3 +1149,113 @@ export interface TreasuryDto {
   id: string; name: string; type: number; typeDisplay: string;
   balance: number; isActive: boolean; createdAt: string; updatedAt: string;
 }
+
+// Lab Orders
+export const LabOrderStatusEnum = { Sent: 0, Manufacturing: 1, Ready: 2, Received: 3, Cancelled: 4 } as const;
+export const LabOrderStatusLabels: Record<number, string> = { 0: 'مرسل', 1: 'قيد التصنيع', 2: 'جاهز', 3: 'مستلم', 4: 'ملغي' };
+export const LabOrderStatusColors: Record<number, string> = {
+  0: 'bg-blue-100 text-blue-700', 1: 'bg-yellow-100 text-yellow-700',
+  2: 'bg-green-100 text-green-700', 3: 'bg-gray-100 text-gray-700', 4: 'bg-red-100 text-red-700',
+};
+export const LabOrderPriorityEnum = { Urgent: 0, Normal: 1, Low: 2 } as const;
+export const LabOrderPriorityLabels: Record<number, string> = { 0: 'عاجل', 1: 'عادي', 2: 'منخفض' };
+
+export interface LabOrderDto {
+  id: string; patientId: string; patientName: string; patientNumber: string | null;
+  orthoCaseId: string | null; orderNumber: string | null; applianceType: string | null;
+  labName: string | null; sentDate: string | null; expectedDate: string | null;
+  receivedDate: string | null; status: number; statusDisplay: string; priority: number;
+  priorityDisplay: string; instructions: string | null; cost: number | null;
+  doctorId: string | null; doctorName: string | null; notes: string | null;
+  isActive: boolean; createdAt: string; updatedAt: string;
+}
+
+export interface CreateLabOrderRequest {
+  patientId: string; orthoCaseId?: string | null; applianceType?: string | null;
+  labName?: string | null; sentDate?: string | null; expectedDate?: string | null;
+  priority?: number; instructions?: string | null; cost?: number | null;
+  doctorId?: string | null; notes?: string | null;
+}
+
+export interface UpdateLabOrderRequest {
+  applianceType?: string | null; labName?: string | null;
+  sentDate?: string | null; expectedDate?: string | null; receivedDate?: string | null;
+  status?: number | null; priority?: number | null; instructions?: string | null;
+  cost?: number | null; doctorId?: string | null; notes?: string | null;
+}
+
+// Inventory
+export interface InventoryItemDto {
+  id: string; name: string; category: string | null; quantity: number;
+  minQuantity: number; unit: string | null; costPerUnit: number | null;
+  batchNumber: string | null; expiryDate: string | null; isLowStock: boolean;
+  isActive: boolean; createdAt: string; updatedAt: string;
+}
+
+export interface CreateInventoryItemRequest {
+  name: string; category?: string | null; quantity: number; minQuantity: number;
+  unit?: string | null; costPerUnit?: number | null; batchNumber?: string | null;
+  expiryDate?: string | null;
+}
+
+export interface UpdateInventoryItemRequest {
+  name?: string | null; category?: string | null; quantity?: number | null;
+  minQuantity?: number | null; unit?: string | null; costPerUnit?: number | null;
+  batchNumber?: string | null; expiryDate?: string | null;
+}
+
+// Employees
+export interface EmployeeDto {
+  id: string; fullName: string; phone: string | null; position: string | null;
+  hireDate: string | null; baseSalary: number | null; emergencyContact: string | null;
+  notes: string | null; isActive: boolean; createdAt: string; updatedAt: string;
+}
+
+export interface CreateEmployeeRequest {
+  fullName: string; phone?: string | null; position?: string | null;
+  hireDate?: string | null; baseSalary?: number | null; emergencyContact?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateEmployeeRequest {
+  fullName?: string | null; phone?: string | null; position?: string | null;
+  hireDate?: string | null; baseSalary?: number | null; emergencyContact?: string | null;
+  notes?: string | null;
+}
+
+// Referrals
+export const ReferralStatusEnum = { Pending: 0, Accepted: 1, Rejected: 2 } as const;
+export const ReferralStatusLabels: Record<number, string> = { 0: 'قيد الانتظار', 1: 'مقبول', 2: 'مرفوض' };
+export const ReferralStatusColors: Record<number, string> = {
+  0: 'bg-yellow-100 text-yellow-700', 1: 'bg-green-100 text-green-700', 2: 'bg-red-100 text-red-700',
+};
+
+export interface ReferralDto {
+  id: string; patientId: string; patientName: string;
+  fromDoctorId: string; fromDoctorName: string; toDoctorId: string; toDoctorName: string;
+  reason: string | null; notes: string | null; status: number; statusDisplay: string;
+  isActive: boolean; createdAt: string; updatedAt: string;
+}
+
+export interface CreateReferralRequest {
+  patientId: string; fromDoctorId: string; toDoctorId: string;
+  reason?: string | null; notes?: string | null;
+}
+
+export interface UpdateReferralRequest {
+  status?: number | null; reason?: string | null; notes?: string | null;
+}
+
+// Branches
+export interface BranchDto {
+  id: string; name: string; address: string | null; phone: string | null;
+  isMain: boolean; isActive: boolean; createdAt: string; updatedAt: string;
+}
+
+export interface CreateBranchRequest {
+  name: string; address?: string | null; phone?: string | null; isMain: boolean;
+}
+
+export interface UpdateBranchRequest {
+  name?: string | null; address?: string | null; phone?: string | null; isMain?: boolean | null;
+}

@@ -10,6 +10,9 @@ import {
   SettingDto,
   UpsertSettingRequest,
   ServiceCategoryLabels,
+  BranchDto,
+  CreateBranchRequest,
+  UpdateBranchRequest,
 } from '@/types/api';
 import SearchInput from '@/components/common/SearchInput';
 import LoadingState from '@/components/common/LoadingState';
@@ -21,7 +24,7 @@ function getErrorMessage(err: unknown): string {
   return 'حدث خطأ غير متوقع';
 }
 
-type TabId = 'clinic' | 'services';
+type TabId = 'clinic' | 'services' | 'branches';
 
 // ─── Clinic Settings Tab ────────────────────────────────────────────
 function ClinicSettingsTab() {
@@ -739,6 +742,7 @@ export default function SettingsContent() {
   const tabs: { id: TabId; label: string; adminOnly?: boolean }[] = [
     { id: 'clinic', label: 'العيادة' },
     { id: 'services', label: 'الخدمات', adminOnly: true },
+    { id: 'branches', label: 'الفروع', adminOnly: true },
   ];
 
   const visibleTabs = tabs.filter((t) => !t.adminOnly || isAdmin);
@@ -773,6 +777,148 @@ export default function SettingsContent() {
       {/* Tab content */}
       {activeTab === 'clinic' && <ClinicSettingsTab />}
       {activeTab === 'services' && <ServicesTab />}
+      {activeTab === 'branches' && <BranchesTab />}
+    </div>
+  );
+}
+
+// ─── Branches Management Tab ────────────────────────────────────────
+function BranchesTab() {
+  const [branches, setBranches] = useState<BranchDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editBranch, setEditBranch] = useState<BranchDto | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [form, setForm] = useState({ name: '', address: '', phone: '', isMain: false });
+
+  const fetchBranches = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<BranchDto[]>('/branches');
+      setBranches(res.data || []);
+    } catch { setBranches([]); }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchBranches(); }, [fetchBranches]);
+
+  const openCreate = () => {
+    setEditBranch(null);
+    setForm({ name: '', address: '', phone: '', isMain: false });
+    setShowModal(true);
+  };
+
+  const openEdit = (b: BranchDto) => {
+    setEditBranch(b);
+    setForm({ name: b.name, address: b.address || '', phone: b.phone || '', isMain: b.isMain });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name) return;
+    setSaving(true);
+    try {
+      if (editBranch) {
+        const req: UpdateBranchRequest = {
+          name: form.name, address: form.address || null, phone: form.phone || null,
+          isMain: form.isMain ? true : null,
+        };
+        await api.put(`/branches/${editBranch.id}`, req);
+      } else {
+        const req: CreateBranchRequest = {
+          name: form.name, address: form.address || null, phone: form.phone || null, isMain: form.isMain,
+        };
+        await api.post('/branches', req);
+      }
+      setShowModal(false);
+      fetchBranches();
+    } catch { /* error */ }
+    setSaving(false);
+  };
+
+  if (loading) return <LoadingState />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-navy">إدارة الفروع</h2>
+          <p className="text-sm text-gray-500">إجمالي الفروع: {branches.length}</p>
+        </div>
+        <button onClick={openCreate} className="inline-flex items-center gap-2 rounded-lg bg-orange px-4 py-2.5 text-sm font-medium text-white hover:bg-orange/90">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+          إضافة فرع
+        </button>
+      </div>
+
+      {branches.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {branches.map((b) => (
+            <div key={b.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-navy">{b.name}</h3>
+                    {b.isMain && (
+                      <span className="rounded-full bg-orange/10 px-2 py-0.5 text-[10px] font-bold text-orange">رئيسي</span>
+                    )}
+                  </div>
+                  {b.address && <p className="mt-1 text-sm text-gray-500">{b.address}</p>}
+                  {b.phone && <p className="text-sm text-gray-500">هاتف: {b.phone}</p>}
+                </div>
+                <button onClick={() => openEdit(b)} className="rounded-lg p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState title="لا توجد فروع" description="لم يتم إضافة أي فروع بعد" />
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowModal(false)}>
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-navy">{editBranch ? 'تعديل الفرع' : 'إضافة فرع جديد'}</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">اسم الفرع <span className="text-red-500">*</span></label>
+                <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="اسم الفرع"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">العنوان</label>
+                <input type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="عنوان الفرع"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">هاتف</label>
+                <input type="text" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="رقم الهاتف"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange" />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" checked={form.isMain} onChange={(e) => setForm({ ...form, isMain: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-orange focus:ring-orange" />
+                فرع رئيسي
+              </label>
+              <div className="flex gap-3 pt-2">
+                <button onClick={handleSave} disabled={saving || !form.name}
+                  className="flex-1 rounded-lg bg-orange px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50">
+                  {saving ? 'جاري الحفظ...' : editBranch ? 'تحديث' : 'إنشاء'}
+                </button>
+                <button onClick={() => setShowModal(false)} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
