@@ -16,6 +16,9 @@ public class ClinicQueueService : IClinicQueueService
     private static readonly HashSet<QueueStatus> TerminalStatuses = new()
     { QueueStatus.Completed, QueueStatus.Cancelled, QueueStatus.NoShow };
 
+    private static readonly HashSet<DailyVisitStatus> QueueEligibleStatuses = new()
+    { DailyVisitStatus.CheckedIn, DailyVisitStatus.Waiting, DailyVisitStatus.ReadyForDoctor };
+
     public ClinicQueueService(AqlanDentalDbContext context)
     {
         _context = context;
@@ -77,10 +80,8 @@ public class ClinicQueueService : IClinicQueueService
         if (dailyVisit is null)
             throw new DomainException("VISIT_NOT_FOUND", "الزيارة غير موجودة");
 
-        if (dailyVisit.Status == DailyVisitStatus.Cancelled ||
-            dailyVisit.Status == DailyVisitStatus.Completed ||
-            dailyVisit.Status == DailyVisitStatus.NoShow)
-            throw new DomainException("VISIT_NOT_ACTIVE", "لا يمكن إرسال زيارة ملغاة أو مكتملة أو لم تحضر للطابور");
+        if (!QueueEligibleStatuses.Contains(dailyVisit.Status))
+            throw new DomainException("VISIT_STATUS_NOT_ALLOWED_FOR_QUEUE", "لا يمكن إرسال هذه الزيارة للطابور إلا بعد تسجيل الوصول أو وضعها في الانتظار أو تجهيزها للطبيب");
 
         var existingQueueItem = await _context.ClinicQueueItems
             .AnyAsync(q => q.DailyVisitId == dailyVisitId && q.IsActive &&
