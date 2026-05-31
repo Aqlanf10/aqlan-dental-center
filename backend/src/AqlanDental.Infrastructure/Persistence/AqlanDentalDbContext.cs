@@ -19,6 +19,7 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Doctor> Doctors => Set<Doctor>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<BookingRequest> BookingRequests => Set<BookingRequest>();
+    public DbSet<DailyVisit> DailyVisits => Set<DailyVisit>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -124,6 +125,37 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.IsActive);
             entity.HasIndex(e => e.PhoneNumber);
+        });
+
+        builder.Entity<DailyVisit>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.VisitType).IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.ChiefComplaint).HasMaxLength(1000);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Appointment)
+                .WithMany()
+                .HasForeignKey(e => e.AppointmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.VisitDate);
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.AppointmentId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
         });
 
         SeedDefaultClinicSettings(builder);

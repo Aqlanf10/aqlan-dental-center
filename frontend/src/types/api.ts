@@ -163,3 +163,72 @@ export const ServiceTypesList = [
   'علاج الأسنان العام',
   'جراحة الفم',
 ] as const;
+
+// Daily Visit
+export const DailyVisitTypeEnum = {
+  Scheduled: 0,
+  WalkIn: 1,
+} as const;
+
+export const DailyVisitStatusEnum = {
+  Scheduled: 0,
+  CheckedIn: 1,
+  Waiting: 2,
+  ReadyForDoctor: 3,
+  InProgress: 4,
+  Completed: 5,
+  Cancelled: 6,
+  NoShow: 7,
+} as const;
+
+export interface DailyVisitDto {
+  id: string;
+  patientId: string;
+  patientName: string;
+  patientNumber: string | null;
+  doctorId: string | null;
+  doctorName: string | null;
+  appointmentId: string | null;
+  visitDate: string;
+  visitType: number;
+  visitTypeDisplay: string;
+  status: number;
+  statusDisplay: string;
+  arrivalTime: string | null;
+  chiefComplaint: string | null;
+  notes: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TodayDailyVisitsDto {
+  date: string;
+  totalAppointments: number;
+  checkedInCount: number;
+  waitingCount: number;
+  readyForDoctorCount: number;
+  inProgressCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  noShowCount: number;
+  todayAppointments: AppointmentDto[];
+  visits: DailyVisitDto[];
+}
+
+export interface CheckInAppointmentRequest {
+  chiefComplaint?: string | null;
+  notes?: string | null;
+}
+
+export interface CreateWalkInVisitRequest {
+  patientId: string;
+  doctorId?: string | null;
+  visitDate?: string | null;
+  chiefComplaint?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateDailyVisitStatusRequest {
+  status: number;
+}

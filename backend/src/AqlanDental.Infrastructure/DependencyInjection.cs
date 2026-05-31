@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IDoctorService, DoctorService>();
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IBookingRequestService, BookingRequestService>();
+        services.AddScoped<IDailyVisitService, DailyVisitService>();
         services.AddScoped<InitialSeeder>();
 
         return services;
