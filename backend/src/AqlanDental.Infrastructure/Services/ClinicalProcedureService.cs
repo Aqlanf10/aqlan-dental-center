@@ -161,6 +161,14 @@ public class ClinicalProcedureService : IClinicalProcedureService
         var procedure = await _context.ClinicalProcedures.FindAsync(procedureId);
         if (procedure is null || !procedure.IsActive) return null;
 
+        var visit = await _context.ClinicalVisits.FindAsync(procedure.ClinicalVisitId);
+        if (visit is null || !visit.IsActive)
+            throw new DomainException("CLINICAL_VISIT_NOT_FOUND", "الزيارة السريرية غير موجودة");
+
+        if (!EditableVisitStatuses.Contains(visit.Status))
+            throw new DomainException("CLINICAL_VISIT_NOT_EDITABLE",
+                "لا يمكن تغيير حالة إجراء تابع لزيارة سريرية مكتملة أو ملغية");
+
         if (!Enum.IsDefined(typeof(ClinicalProcedureStatus), request.Status))
             throw new DomainException("INVALID_PROCEDURE_STATUS", "حالة الإجراء غير صالحة");
 
