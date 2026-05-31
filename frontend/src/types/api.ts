@@ -232,3 +232,101 @@ export interface CreateWalkInVisitRequest {
 export interface UpdateDailyVisitStatusRequest {
   status: number;
 }
+
+// Clinic Queue
+export const QueuePriorityEnum = {
+  Normal: 0,
+  Urgent: 1,
+  VIP: 2,
+  Emergency: 3,
+} as const;
+
+export const QueueStatusEnum = {
+  Waiting: 0,
+  Called: 1,
+  InRoom: 2,
+  InProgress: 3,
+  Completed: 4,
+  Cancelled: 5,
+  NoShow: 6,
+} as const;
+
+export interface ClinicQueueItemDto {
+  id: string;
+  dailyVisitId: string;
+  patientId: string;
+  patientName: string;
+  patientNumber: string | null;
+  doctorId: string | null;
+  doctorName: string | null;
+  roomId: string | null;
+  roomName: string | null;
+  queueDate: string;
+  queueNumber: number;
+  priority: number;
+  priorityDisplay: string;
+  status: number;
+  statusDisplay: string;
+  calledAt: string | null;
+  enteredRoomAt: string | null;
+  completedAt: string | null;
+  notes: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TodayQueueDto {
+  date: string;
+  waitingCount: number;
+  calledCount: number;
+  inRoomCount: number;
+  inProgressCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  queueItems: ClinicQueueItemDto[];
+  rooms: ClinicRoomDto[];
+}
+
+export interface SendToQueueRequest {
+  priority: number;
+  notes?: string | null;
+}
+
+export interface UpdateQueuePriorityRequest {
+  priority: number;
+}
+
+export interface CallPatientRequest {
+  notes?: string | null;
+}
+
+export interface EnterRoomRequest {
+  roomId: string;
+}
+
+// Clinic Room
+export interface ClinicRoomDto {
+  id: string;
+  name: string;
+  roomNumber: string | null;
+  description: string | null;
+  isActive: boolean;
+  isOccupied: boolean;
+  currentDailyVisitId: string | null;
+  currentPatientName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateRoomRequest {
+  name: string;
+  roomNumber?: string | null;
+  description?: string | null;
+}
+
+export interface UpdateRoomRequest {
+  name: string;
+  roomNumber?: string | null;
+  description?: string | null;
+}
