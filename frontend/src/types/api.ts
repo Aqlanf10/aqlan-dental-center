@@ -736,3 +736,146 @@ export interface UpsertSettingRequest {
   value?: string | null;
   category?: string | null;
 }
+
+// General Dentistry
+export const ToothConditionTypeEnum = {
+  Healthy: 0, Caries: 1, Filled: 2, Crown: 3, Missing: 4,
+  Implant: 5, RootCanal: 6, Bridge: 7, Veneer: 8, Other: 99,
+} as const;
+
+export const ToothConditionTypeLabels: Record<number, string> = {
+  0: 'سليم', 1: 'تسوس', 2: 'حشوة', 3: 'تاج', 4: 'مفقود',
+  5: 'زراعة', 6: 'علاج عصب', 7: 'جسر', 8: 'قشرة', 99: 'أخرى',
+};
+
+export const GeneralTreatmentTypeEnum = {
+  Examination: 0, Cleaning: 1, Filling: 2, Extraction: 3, RootCanal: 4,
+  Crown: 5, Bridge: 6, Denture: 7, Whitening: 8, Veneer: 9,
+  Sealant: 10, Fluoride: 11, Other: 99,
+} as const;
+
+export const GeneralTreatmentTypeLabels: Record<number, string> = {
+  0: 'فحص', 1: 'تنظيف', 2: 'حشوة', 3: 'خلع', 4: 'علاج عصب',
+  5: 'تاج', 6: 'جسر', 7: 'طقم', 8: 'تبييض', 9: 'قشرة',
+  10: 'مانع تسرب', 11: 'فلورايد', 99: 'أخرى',
+};
+
+export const TreatmentStepPriorityEnum = {
+  Low: 0, Normal: 1, High: 2, Urgent: 3,
+} as const;
+
+export const TreatmentStepStatusEnum = {
+  Planned: 0, InProgress: 1, Completed: 2, Skipped: 3, Cancelled: 4,
+} as const;
+
+export interface ToothConditionDto {
+  id: string;
+  chartId: string;
+  toothNumber: number;
+  condition: number;
+  conditionDisplay: string;
+  surfacesAffected: string | null;
+  notes: string | null;
+  treatmentDone: string | null;
+}
+
+export interface DentalChartDto {
+  id: string;
+  patientId: string;
+  chartDate: string;
+  doctorId: string | null;
+  doctorName: string | null;
+  toothConditions: ToothConditionDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertDentalChartRequest {
+  doctorId?: string | null;
+}
+
+export interface UpdateToothConditionRequest {
+  condition: number;
+  surfacesAffected?: string | null;
+  notes?: string | null;
+  treatmentDone?: string | null;
+}
+
+export interface GeneralTreatmentDto {
+  id: string;
+  patientId: string;
+  visitId: string | null;
+  treatmentType: number;
+  treatmentTypeDisplay: string;
+  toothNumber: number | null;
+  materialUsed: string | null;
+  anesthesiaType: string | null;
+  cost: number | null;
+  doctorId: string | null;
+  doctorName: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface CreateGeneralTreatmentRequest {
+  patientId: string;
+  visitId?: string | null;
+  treatmentType: number;
+  toothNumber?: number | null;
+  materialUsed?: string | null;
+  anesthesiaType?: string | null;
+  cost?: number | null;
+  doctorId?: string | null;
+  notes?: string | null;
+}
+
+export interface TreatmentPlanStepDto {
+  id: string;
+  patientId: string;
+  sequenceNumber: number;
+  clinicServiceId: string | null;
+  serviceNameSnapshot: string | null;
+  department: string | null;
+  toothNumber: number | null;
+  toothArea: string | null;
+  title: string;
+  description: string | null;
+  priority: number;
+  priorityDisplay: string;
+  status: number;
+  statusDisplay: string;
+  responsibleDoctorId: string | null;
+  responsibleDoctorName: string | null;
+  plannedDate: string | null;
+  completedDate: string | null;
+  estimatedCost: number | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AddTreatmentPlanStepRequest {
+  patientId: string;
+  clinicServiceId?: string | null;
+  serviceNameSnapshot?: string | null;
+  department?: string | null;
+  toothNumber?: number | null;
+  toothArea?: string | null;
+  title: string;
+  description?: string | null;
+  priority?: number | null;
+  responsibleDoctorId?: string | null;
+  plannedDate?: string | null;
+  estimatedCost?: number | null;
+  notes?: string | null;
+}
+
+export interface UpdateTreatmentPlanStepRequest {
+  title?: string | null;
+  description?: string | null;
+  priority?: number | null;
+  responsibleDoctorId?: string | null;
+  plannedDate?: string | null;
+  estimatedCost?: number | null;
+  notes?: string | null;
+}

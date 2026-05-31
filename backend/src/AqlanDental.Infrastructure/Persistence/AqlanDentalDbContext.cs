@@ -30,6 +30,10 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<DentalHistory> DentalHistories => Set<DentalHistory>();
     public DbSet<ClinicService> ClinicServices => Set<ClinicService>();
     public DbSet<Setting> Settings => Set<Setting>();
+    public DbSet<DentalChart> DentalCharts => Set<DentalChart>();
+    public DbSet<ToothCondition> ToothConditions => Set<ToothCondition>();
+    public DbSet<GeneralTreatment> GeneralTreatments => Set<GeneralTreatment>();
+    public DbSet<TreatmentPlanStep> TreatmentPlanSteps => Set<TreatmentPlanStep>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -409,6 +413,117 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Category).HasMaxLength(100);
 
             entity.HasIndex(e => e.Key).IsUnique();
+        });
+
+        builder.Entity<DentalChart>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ChartDate).IsRequired();
+
+            entity.HasOne(e => e.Patient)
+                .WithMany(p => p.DentalCharts)
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(e => e.ToothConditions)
+                .WithOne(tc => tc.Chart)
+                .HasForeignKey(tc => tc.ChartId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.ChartDate);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<ToothCondition>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ToothNumber).IsRequired();
+            entity.Property(e => e.Condition).IsRequired();
+            entity.Property(e => e.SurfacesAffected).HasMaxLength(50);
+            entity.Property(e => e.Notes).HasMaxLength(1000);
+            entity.Property(e => e.TreatmentDone).HasMaxLength(500);
+
+            entity.HasIndex(e => e.ChartId);
+            entity.HasIndex(e => new { e.ChartId, e.ToothNumber }).IsUnique();
+            entity.HasIndex(e => e.ToothNumber);
+            entity.HasIndex(e => e.Condition);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<GeneralTreatment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TreatmentType).IsRequired();
+            entity.Property(e => e.MaterialUsed).HasMaxLength(200);
+            entity.Property(e => e.AnesthesiaType).HasMaxLength(200);
+            entity.Property(e => e.Cost).HasPrecision(12, 2);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany(p => p.GeneralTreatments)
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Visit)
+                .WithMany()
+                .HasForeignKey(e => e.VisitId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.VisitId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.TreatmentType);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<TreatmentPlanStep>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SequenceNumber).IsRequired();
+            entity.Property(e => e.ServiceNameSnapshot).HasMaxLength(200);
+            entity.Property(e => e.Department).HasMaxLength(100);
+            entity.Property(e => e.ToothArea).HasMaxLength(100);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.Priority).IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.EstimatedCost).HasPrecision(12, 2);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany(p => p.TreatmentPlanSteps)
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ClinicService)
+                .WithMany()
+                .HasForeignKey(e => e.ClinicServiceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ResponsibleDoctor)
+                .WithMany()
+                .HasForeignKey(e => e.ResponsibleDoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.ClinicServiceId);
+            entity.HasIndex(e => e.ResponsibleDoctorId);
+            entity.HasIndex(e => new { e.PatientId, e.SequenceNumber });
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Priority);
+            entity.HasIndex(e => e.IsActive);
         });
 
         SeedDefaultClinicSettings(builder);

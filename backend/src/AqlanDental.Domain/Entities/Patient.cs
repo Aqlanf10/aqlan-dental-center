@@ -20,6 +20,9 @@ public class Patient
     // Navigation properties
     public MedicalHistory? MedicalHistory { get; set; }
     public DentalHistory? DentalHistory { get; set; }
+    public List<DentalChart> DentalCharts { get; set; } = new();
+    public List<GeneralTreatment> GeneralTreatments { get; set; } = new();
+    public List<TreatmentPlanStep> TreatmentPlanSteps { get; set; } = new();
 }
 
 public enum Gender
