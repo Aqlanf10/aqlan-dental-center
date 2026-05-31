@@ -10,7 +10,12 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import EmptyState from '../common/EmptyState';
 import LoadingState from '../common/LoadingState';
 
-export default function PatientList() {
+interface PatientListProps {
+  canDelete?: boolean;
+  canCreate?: boolean;
+}
+
+export default function PatientList({ canDelete = false, canCreate = false }: PatientListProps) {
   const router = useRouter();
   const [patients, setPatients] = useState<PatientDto[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -70,15 +75,17 @@ export default function PatientList() {
             إجمالي المرضى: {totalCount}
           </p>
         </div>
-        <button
-          onClick={() => router.push('/dashboard/patients/new')}
-          className="inline-flex items-center gap-2 rounded-lg bg-orange px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange/90"
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          إضافة مريض
-        </button>
+        {canCreate && (
+          <button
+            onClick={() => router.push('/dashboard/patients/new')}
+            className="inline-flex items-center gap-2 rounded-lg bg-orange px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange/90"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            إضافة مريض
+          </button>
+        )}
       </div>
 
       {/* Search */}
@@ -117,7 +124,9 @@ export default function PatientList() {
                     <th className="px-4 py-3 text-right font-semibold text-navy">الجنس</th>
                     <th className="px-4 py-3 text-right font-semibold text-navy">الهاتف</th>
                     <th className="px-4 py-3 text-right font-semibold text-navy">تاريخ الإنشاء</th>
-                    <th className="px-4 py-3 text-right font-semibold text-navy">إجراءات</th>
+                    {canDelete && (
+                      <th className="px-4 py-3 text-right font-semibold text-navy">إجراءات</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -142,20 +151,22 @@ export default function PatientList() {
                       <td className="px-4 py-3 text-gray-600">
                         {new Date(patient.createdAt).toLocaleDateString('ar-SA')}
                       </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteId(patient.id);
-                          }}
-                          className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                          aria-label="حذف المريض"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </td>
+                      {canDelete && (
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteId(patient.id);
+                            }}
+                            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                            aria-label="حذف المريض"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
