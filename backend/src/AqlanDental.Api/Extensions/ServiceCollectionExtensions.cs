@@ -77,7 +77,13 @@ public static class ServiceCollectionExtensions
             .AddPolicy("BookingRequestWrite", policy =>
                 policy.RequireRole(AppRoles.Admin, AppRoles.Reception))
             .AddPolicy("BookingRequestDelete", policy =>
-                policy.RequireRole(AppRoles.Admin));
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("DailyVisitsRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Reception, AppRoles.Doctor))
+            .AddPolicy("DailyVisitsWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Reception))
+            .AddPolicy("DailyVisitsDoctorUpdate", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Reception, AppRoles.Doctor));
 
         services.AddSwaggerGen(c =>
         {
