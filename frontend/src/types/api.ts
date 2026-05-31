@@ -330,3 +330,99 @@ export interface UpdateRoomRequest {
   roomNumber?: string | null;
   description?: string | null;
 }
+
+// Clinical Visit
+export const ClinicalVisitStatusEnum = {
+  Open: 0,
+  InProgress: 1,
+  Completed: 2,
+  Cancelled: 3,
+} as const;
+
+export interface PrescriptionDto {
+  id: string;
+  clinicalVisitId: string;
+  patientId: string;
+  doctorId: string;
+  medicationName: string;
+  dosage: string | null;
+  frequency: string | null;
+  duration: string | null;
+  instructions: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClinicalVisitDto {
+  id: string;
+  dailyVisitId: string;
+  clinicQueueItemId: string | null;
+  patientId: string;
+  patientName: string;
+  patientNumber: string | null;
+  doctorId: string;
+  doctorName: string | null;
+  visitDate: string;
+  startedAt: string;
+  completedAt: string | null;
+  status: number;
+  statusDisplay: string;
+  chiefComplaint: string | null;
+  clinicalFindings: string | null;
+  diagnosis: string | null;
+  treatmentNotes: string | null;
+  doctorRecommendations: string | null;
+  nextVisitRecommended: boolean;
+  nextVisitDate: string | null;
+  prescriptions: PrescriptionDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TodayClinicalVisitsDto {
+  date: string;
+  totalCount: number;
+  openCount: number;
+  inProgressCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  visits: ClinicalVisitDto[];
+}
+
+export interface StartClinicalVisitRequest {
+  chiefComplaint?: string | null;
+}
+
+export interface UpdateClinicalVisitRequest {
+  chiefComplaint?: string | null;
+  clinicalFindings?: string | null;
+  diagnosis?: string | null;
+  treatmentNotes?: string | null;
+  doctorRecommendations?: string | null;
+  nextVisitRecommended?: boolean | null;
+  nextVisitDate?: string | null;
+}
+
+export interface CompleteClinicalVisitRequest {
+  diagnosis?: string | null;
+  treatmentNotes?: string | null;
+  doctorRecommendations?: string | null;
+  nextVisitRecommended?: boolean | null;
+  nextVisitDate?: string | null;
+}
+
+export interface AddPrescriptionRequest {
+  medicationName: string;
+  dosage?: string | null;
+  frequency?: string | null;
+  duration?: string | null;
+  instructions?: string | null;
+}
+
+export interface UpdatePrescriptionRequest {
+  medicationName: string;
+  dosage?: string | null;
+  frequency?: string | null;
+  duration?: string | null;
+  instructions?: string | null;
+}
