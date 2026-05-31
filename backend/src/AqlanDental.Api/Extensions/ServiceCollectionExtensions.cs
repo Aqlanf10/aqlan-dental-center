@@ -147,7 +147,9 @@ public static class ServiceCollectionExtensions
             .AddPolicy("BranchesWrite", policy =>
                 policy.RequireRole(AppRoles.Admin))
             .AddPolicy("ReportsRead", policy =>
-                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant));
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("UserManagement", policy =>
+                policy.RequireRole(AppRoles.Admin));
 
         services.AddSwaggerGen(c =>
         {

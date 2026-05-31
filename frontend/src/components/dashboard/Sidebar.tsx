@@ -120,6 +120,13 @@ const navItems: NavItem[] = [
     roles: ['Admin'],
   },
   {
+    label: 'المستخدمين',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />,
+    href: '/dashboard/users',
+    enabled: true,
+    roles: ['Admin'],
+  },
+  {
     label: 'الإحالات',
     icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />,
     href: '/dashboard/referrals',
@@ -223,6 +230,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <div className="text-gray-400">{user.role}</div>
             </div>
           )}
+          <a
+            href="/change-password"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-navy-light hover:text-orange mb-1"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+            تغيير كلمة المرور
+          </a>
           <button
             onClick={logout}
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-red-500/20 hover:text-red-300"

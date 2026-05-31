@@ -10,11 +10,14 @@ function removeAuthCookie() {
   document.cookie = 'auth-token=; path=/; max-age=0';
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 interface User {
   id: string;
   email: string;
   fullName: string;
   role: string;
+  mustChangePassword: boolean;
 }
 
 interface AuthContextType {
@@ -23,7 +26,10 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (emailOrPhone: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
+  forgotPassword: (usernameOrEmail: string) => Promise<{ success: boolean; message: string; resetToken?: string }>;
+  resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -32,7 +38,10 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   login: async () => {},
-  logout: () => {},
+  logout: async () => {},
+  changePassword: async () => ({ success: false, message: '' }),
+  forgotPassword: async () => ({ success: false, message: '' }),
+  resetPassword: async () => ({ success: false, message: '' }),
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -56,11 +65,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: payload.email || '',
         fullName: payload.fullName || payload.unique_name || '',
         role: payload.role || '',
+        mustChangePassword: payload.mustChangePassword === 'true',
       };
     } catch {
       return null;
     }
   };
+
+  const fetchMe = useCallback(async (accessToken: string): Promise<User | null> => {
+    try {
+      const res = await fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          id: data.id || '',
+          email: data.email || '',
+          fullName: data.fullName || '',
+          role: data.roles?.[0] || '',
+          mustChangePassword: data.mustChangePassword || false,
+        };
+      }
+    } catch {
+      // Ignore fetch errors
+    }
+    return null;
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem('token');
@@ -70,6 +101,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(stored);
         setUser(decoded);
         setAuthCookie(stored);
+        // Fetch latest user info from server
+        fetchMe(stored).then(serverUser => {
+          if (serverUser) {
+            setUser(serverUser);
+          }
+        });
       } else {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
@@ -77,14 +114,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     setIsLoading(false);
-  }, []);
+  }, [fetchMe]);
 
   const login = useCallback(async (emailOrPhone: string, password: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
-    const res = await fetch(`${apiUrl}/auth/login`, {
+    const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ emailOrPhone, password }),
+      body: JSON.stringify({ email: emailOrPhone, password }),
     });
 
     if (!res.ok) {
@@ -97,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const data = await res.json();
-    const accessToken = data.token || data.accessToken;
+    const accessToken = data.accessToken;
     const refreshToken = data.refreshToken;
 
     if (!accessToken) {
@@ -111,15 +147,122 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const decoded = decodeJWT(accessToken);
     setToken(accessToken);
     setUser(decoded);
+
+    // Check if user must change password
+    if (data.mustChangePassword || decoded?.mustChangePassword) {
+      if (decoded) {
+        setUser({ ...decoded, mustChangePassword: true });
+      }
+    }
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    const currentToken = localStorage.getItem('token');
+
+    try {
+      if (currentToken && refreshToken) {
+        await fetch(`${API_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${currentToken}`,
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+      }
+    } catch {
+      // Ignore logout API errors
+    }
+
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     removeAuthCookie();
     setToken(null);
     setUser(null);
     window.location.href = '/';
+  }, []);
+
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+    const currentToken = localStorage.getItem('token');
+    if (!currentToken) return { success: false, message: 'يرجى تسجيل الدخول أولاً' };
+
+    try {
+      const res = await fetch(`${API_URL}/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentToken}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return { success: false, message: data.message || 'فشل في تغيير كلمة المرور' };
+      }
+
+      // Update token if new one provided
+      if (data.accessToken) {
+        localStorage.setItem('token', data.accessToken);
+        setAuthCookie(data.accessToken);
+        const decoded = decodeJWT(data.accessToken);
+        setToken(data.accessToken);
+        if (decoded) {
+          setUser({ ...decoded, mustChangePassword: false });
+        }
+      } else {
+        // Clear mustChangePassword flag
+        if (user) {
+          setUser({ ...user, mustChangePassword: false });
+        }
+      }
+
+      return { success: true, message: data.message || 'تم تغيير كلمة المرور بنجاح' };
+    } catch {
+      return { success: false, message: 'حدث خطأ في الاتصال. يرجى المحاولة لاحقاً' };
+    }
+  }, [user]);
+
+  const forgotPassword = useCallback(async (usernameOrEmail: string): Promise<{ success: boolean; message: string; resetToken?: string }> => {
+    try {
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usernameOrEmail }),
+      });
+
+      const data = await res.json();
+
+      return {
+        success: data.success !== false,
+        message: data.message || 'إذا كان الحساب موجوداً، سيتم إرسال رابط إعادة تعيين كلمة المرور',
+        resetToken: data.resetToken,
+      };
+    } catch {
+      return { success: false, message: 'حدث خطأ في الاتصال. يرجى المحاولة لاحقاً' };
+    }
+  }, []);
+
+  const resetPassword = useCallback(async (token: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const res = await fetch(`${API_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return { success: false, message: data.message || 'فشل في إعادة تعيين كلمة المرور' };
+      }
+
+      return { success: true, message: data.message || 'تم إعادة تعيين كلمة المرور بنجاح' };
+    } catch {
+      return { success: false, message: 'حدث خطأ في الاتصال. يرجى المحاولة لاحقاً' };
+    }
   }, []);
 
   return (
@@ -131,6 +274,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         logout,
+        changePassword,
+        forgotPassword,
+        resetPassword,
       }}
     >
       {children}

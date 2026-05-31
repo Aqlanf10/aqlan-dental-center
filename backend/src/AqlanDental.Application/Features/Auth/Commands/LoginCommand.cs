@@ -30,10 +30,11 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResult>
             throw new UnauthorizedAccessException("هذا الحساب معطل. يرجى التواصل مع الإدارة");
         }
 
-        var authResult = await _jwtService.GenerateTokensAsync(user.UserId, user.FullName, user.Roles);
+        var authResult = await _jwtService.GenerateTokensAsync(
+            user.UserId, user.FullName, user.Roles, user.MustChangePassword);
 
         await _userService.UpdateLastLoginAsync(user.UserId);
 
-        return authResult;
+        return authResult with { MustChangePassword = user.MustChangePassword };
     }
 }
