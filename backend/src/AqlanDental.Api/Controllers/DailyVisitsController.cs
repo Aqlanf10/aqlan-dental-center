@@ -53,7 +53,7 @@ public class DailyVisitsController : ControllerBase
     }
 
     [HttpPatch("{visitId:guid}/status")]
-    [Authorize(Policy = "DailyVisitsDoctorUpdate")]
+    [Authorize(Policy = "DailyVisitsWrite")]
     public async Task<ActionResult<DailyVisitDto>> UpdateVisitStatus(
         Guid visitId, UpdateDailyVisitStatusRequest request)
     {

@@ -27,8 +27,8 @@ export default function WalkInVisitModal({ onSubmit, onClose }: Props) {
     setLoading(true);
     try {
       const [patientsRes, doctorsRes] = await Promise.all([
-        api.get<PatientDto[]>('patients?page=1&pageSize=1000'),
-        api.get<{ items: DoctorDto[] }>('doctors?page=1&pageSize=100'),
+        api.get<PatientDto[]>('/patients?page=1&pageSize=1000'),
+        api.get<{ items: DoctorDto[] }>('/doctors?page=1&pageSize=100'),
       ]);
       // patients endpoint returns PagedResult
       const pRes = patientsRes.data as unknown as { items: PatientDto[] };

@@ -50,7 +50,7 @@ export default function DailyVisitsBoard() {
     setLoading(true);
     setError('');
     try {
-      const res = await api.get<TodayDailyVisitsDto>(`daily-visits/today?date=${selectedDate}`);
+      const res = await api.get<TodayDailyVisitsDto>(`/daily-visits/today?date=${selectedDate}`);
       setData(res.data);
     } catch (err: unknown) {
       setError(getErrorMessage(err) || 'فشل تحميل البيانات');
@@ -92,7 +92,7 @@ export default function DailyVisitsBoard() {
 
   const handleCheckIn = async (appointmentId: string, chiefComplaint: string, notes: string) => {
     try {
-      await api.post<DailyVisitDto>(`daily-visits/appointments/${appointmentId}/check-in`, {
+      await api.post<DailyVisitDto>(`/daily-visits/appointments/${appointmentId}/check-in`, {
         chiefComplaint: chiefComplaint || null,
         notes: notes || null,
       });
@@ -105,7 +105,7 @@ export default function DailyVisitsBoard() {
   const handleNoShow = async (appointmentId: string) => {
     if (!confirm('هل أنت متأكد من تسجيل عدم الحضور؟')) return;
     try {
-      await api.post<DailyVisitDto>(`daily-visits/appointments/${appointmentId}/no-show`);
+      await api.post<DailyVisitDto>(`/daily-visits/appointments/${appointmentId}/no-show`);
       await fetchData();
     } catch (err: unknown) {
       alert(getErrorMessage(err) || 'فشل تسجيل عدم الحضور');
@@ -114,7 +114,7 @@ export default function DailyVisitsBoard() {
 
   const handleWalkIn = async (walkInData: { patientId: string; doctorId?: string; chiefComplaint?: string; notes?: string }) => {
     try {
-      await api.post<DailyVisitDto>('daily-visits/walk-in', {
+      await api.post<DailyVisitDto>('/daily-visits/walk-in', {
         patientId: walkInData.patientId,
         doctorId: walkInData.doctorId || null,
         visitDate: selectedDate,
@@ -130,7 +130,7 @@ export default function DailyVisitsBoard() {
 
   const handleStatusChange = async (visitId: string, newStatus: number) => {
     try {
-      await api.patch<DailyVisitDto>(`daily-visits/${visitId}/status`, { status: newStatus });
+      await api.patch<DailyVisitDto>(`/daily-visits/${visitId}/status`, { status: newStatus });
       await fetchData();
     } catch (err: unknown) {
       alert(getErrorMessage(err) || 'فشل تحديث الحالة');
@@ -140,7 +140,7 @@ export default function DailyVisitsBoard() {
   const handleCancel = async (visitId: string) => {
     if (!confirm('هل أنت متأكد من إلغاء الزيارة؟')) return;
     try {
-      await api.post<DailyVisitDto>(`daily-visits/${visitId}/cancel`);
+      await api.post<DailyVisitDto>(`/daily-visits/${visitId}/cancel`);
       await fetchData();
     } catch (err: unknown) {
       alert(getErrorMessage(err) || 'فشل إلغاء الزيارة');
