@@ -33,6 +33,8 @@ import GeneralDentistryTab from './tabs/GeneralDentistryTab';
 import ClinicalPhotosTab from './tabs/ClinicalPhotosTab';
 import RadiographsTab from './tabs/RadiographsTab';
 import DocumentsTab from './tabs/DocumentsTab';
+import PatientStickyHeader from '../../app/dashboard/patients/[id]/_components/PatientStickyHeader';
+import PatientCommandBar from '../../app/dashboard/patients/[id]/_components/PatientCommandBar';
 
 interface PatientDetailsProps {
   patientId: string;
@@ -75,6 +77,7 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
   const [error, setError] = useState<string | null>(null);
   const [showDelete, setShowDelete] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [financeSummary, setFinanceSummary] = useState<PatientFinanceSummaryDto | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -88,6 +91,17 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
       }
     }
     fetchData();
+  }, [patientId]);
+
+  // جلب الرصيد المالي
+  useEffect(() => {
+    async function loadFinance() {
+      try {
+        const res = await api.get<PatientFinanceSummaryDto>(`/finance/patients/${patientId}/summary`);
+        setFinanceSummary(res.data);
+      } catch { /* silent */ }
+    }
+    loadFinance();
   }, [patientId]);
 
   const loadTabData = useCallback(async (tabId: string) => {
@@ -148,92 +162,54 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
   }, {} as Record<string, typeof TABS>);
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push('/dashboard/patients')}
-            className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100"
-            aria-label="العودة"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-navy">{patient.fullName}</h1>
-            <p className="text-sm text-gray-500">{patient.patientNumber}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {canEdit && (
-            <button
-              onClick={() => router.push(`/dashboard/patients/${patientId}/edit`)}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue/90"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              تعديل
-            </button>
-          )}
-          {canDelete && (
-            <button
-              onClick={() => setShowDelete(true)}
-              className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              حذف
-            </button>
-          )}
+    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 -m-6">
+      {/* 1. الرأس الثابت - Microsoft Ribbon Style */}
+      <PatientStickyHeader
+        patient={patient}
+        financeSummary={financeSummary}
+        canEdit={canEdit}
+        canDelete={canDelete}
+        onEdit={() => router.push(`/dashboard/patients/${patientId}/edit`)}
+        onDelete={() => setShowDelete(true)}
+        onBack={() => router.push('/dashboard/patients')}
+      />
+
+      {/* 2. شريط الأوامر المركزي (Ribbon) */}
+      <PatientCommandBar />
+
+      {/* 3. شريط التبويبات */}
+      <div className="bg-white dark:bg-slate-800 px-4 pt-2 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+        <div className="flex gap-1 min-w-max" dir="rtl">
+          {Object.entries(groups).map(([groupName, tabs], gi) => (
+            <div key={groupName} className="flex items-center">
+              {gi > 0 && <div className="mx-2 h-5 w-px bg-slate-200 dark:bg-slate-600" />}
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => tab.enabled && setActiveTab(tab.id)}
+                  className={`relative whitespace-nowrap px-3 py-2 text-xs font-medium transition-colors rounded-t-md font-[Tajawal] ${
+                    activeTab === tab.id
+                      ? 'text-[#3d7ab5] bg-[#3d7ab5]/5 border-b-2 border-[#3d7ab5]'
+                      : tab.enabled
+                      ? 'text-slate-500 hover:text-[#1a3a5c] hover:bg-slate-50'
+                      : 'cursor-not-allowed text-slate-400'
+                  }`}
+                  disabled={!tab.enabled}
+                >
+                  {tab.label}
+                  {!tab.enabled && (
+                    <span className="mr-1 rounded-full bg-[#f5922e]/20 px-1.5 py-0.5 text-[9px] text-[#f5922e]">قريبًا</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Quick Stats Bar */}
-      {summary && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <QuickStat label="المواعيد" value={summary.lastAppointment ? '1+' : '0'} color="bg-blue-50 text-blue-700" />
-          <QuickStat label="الزيارات السريرية" value={summary.totalClinicalVisits.toString()} color="bg-green-50 text-green-700" />
-          <QuickStat label="الإجراءات" value={summary.latestProcedures.length.toString()} color="bg-orange/5 text-orange" />
-          <QuickStat label="الوصفات" value={summary.latestPrescriptions.length.toString()} color="bg-purple-50 text-purple-700" />
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
-        {Object.entries(groups).map(([groupName, tabs], gi) => (
-          <div key={groupName} className="flex items-center">
-            {gi > 0 && <div className="mx-1 h-6 w-px bg-gray-300" />}
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => tab.enabled && setActiveTab(tab.id)}
-                className={`relative whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? 'text-navy'
-                    : tab.enabled
-                    ? 'text-gray-500 hover:text-navy'
-                    : 'cursor-not-allowed text-gray-400'
-                }`}
-                disabled={!tab.enabled}
-              >
-                {tab.label}
-                {!tab.enabled && (
-                  <span className="mr-2 rounded-full bg-orange/20 px-2 py-0.5 text-[10px] text-orange">قريبًا</span>
-                )}
-                {activeTab === tab.id && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy" />
-                )}
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      {/* Tab Content */}
+      {/* 4. مساحة العمل (محتوى التبويب) */}
+      <div className="p-4 flex-1 overflow-y-auto">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 min-h-[400px]">
       {activeTab === 'overview' && <OverviewTab patient={patient} summary={summary} timeline={timeline} />}
       {activeTab === 'info' && <InfoTab patient={patient} />}
       {activeTab === 'medicalHistory' && <MedicalHistoryTab patientId={patientId} canEdit={canEdit} />}
@@ -254,6 +230,8 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
       {activeTab === 'radiographs' && <RadiographsTab patientId={patientId} canEdit={canEdit} />}
       {activeTab === 'documents' && <DocumentsTab patientId={patientId} canEdit={canEdit} />}
       {activeTab === 'finance' && <FinanceTab patientId={patientId} />}
+        </div>
+      </div>
 
       <ConfirmDialog
         isOpen={showDelete}
@@ -269,14 +247,15 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
   );
 }
 
-function QuickStat({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div className={`rounded-lg px-4 py-3 ${color}`}>
-      <p className="text-2xl font-bold">{value}</p>
-      <p className="text-xs font-medium opacity-80">{label}</p>
-    </div>
-  );
-}
+// QuickStat - محفوظ للاستخدام المستقبلي
+// function QuickStat({ label, value, color }: { label: string; value: string; color: string }) {
+//   return (
+//     <div className={`rounded-lg px-4 py-3 ${color}`}>
+//       <p className="text-2xl font-bold">{value}</p>
+//       <p className="text-xs font-medium opacity-80">{label}</p>
+//     </div>
+//   );
+// }
 
 function OverviewTab({ patient, summary: _s, timeline }: { patient: PatientDto; summary: PatientSummaryDto | null; timeline: TimelineEntryDto[] }) {
   void _s;
