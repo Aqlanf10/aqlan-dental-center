@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<IClinicQueueService, ClinicQueueService>();
         services.AddScoped<IClinicRoomService, ClinicRoomService>();
         services.AddScoped<IClinicalVisitService, ClinicalVisitService>();
+        services.AddScoped<IClinicalProcedureService, ClinicalProcedureService>();
         services.AddScoped<InitialSeeder>();
 
         return services;

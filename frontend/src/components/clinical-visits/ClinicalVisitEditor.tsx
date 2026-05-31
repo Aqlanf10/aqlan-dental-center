@@ -9,6 +9,7 @@ import {
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/auth/AuthContext';
 import ClinicalVisitStatusBadge from './ClinicalVisitStatusBadge';
+import ClinicalProcedureList from '../clinical-procedures/ClinicalProcedureList';
 
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -217,6 +218,11 @@ export default function ClinicalVisitEditor({ visit: initialVisit, onClose, onUp
             ) : (
               <p className="text-xs text-gray-400">لا توجد وصفات طبية</p>
             )}
+          </div>
+
+          {/* Clinical Procedures */}
+          <div className="border-t border-gray-200 pt-4">
+            <ClinicalProcedureList clinicalVisitId={visit.id} isVisitActive={isActive} />
           </div>
 
           {/* Disabled future buttons */}

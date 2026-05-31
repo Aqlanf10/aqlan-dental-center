@@ -24,6 +24,7 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ClinicQueueItem> ClinicQueueItems => Set<ClinicQueueItem>();
     public DbSet<ClinicalVisit> ClinicalVisits => Set<ClinicalVisit>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
+    public DbSet<ClinicalProcedure> ClinicalProcedures => Set<ClinicalProcedure>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -253,6 +254,11 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
                 .HasForeignKey(p => p.ClinicalVisitId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasMany(e => e.Procedures)
+                .WithOne(p => p.ClinicalVisit)
+                .HasForeignKey(p => p.ClinicalVisitId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasIndex(e => e.DailyVisitId);
             entity.HasIndex(e => e.ClinicQueueItemId);
             entity.HasIndex(e => e.PatientId);
@@ -284,6 +290,40 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.ClinicalVisitId);
             entity.HasIndex(e => e.PatientId);
             entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<ClinicalProcedure>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.ToothNumber).HasMaxLength(50);
+            entity.Property(e => e.ToothSurface).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.ClinicalNotes).HasMaxLength(3000);
+            entity.Property(e => e.ProcedureType).IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+
+            entity.HasOne(e => e.ClinicalVisit)
+                .WithMany(v => v.Procedures)
+                .HasForeignKey(e => e.ClinicalVisitId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.ClinicalVisitId);
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.ProcedureType);
+            entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.IsActive);
         });
 
