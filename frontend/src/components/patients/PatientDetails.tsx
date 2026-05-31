@@ -30,6 +30,9 @@ import TreatmentPlanTab from './tabs/TreatmentPlanTab';
 import ReferralsTab from './tabs/ReferralsTab';
 import LabOrdersTab from './tabs/LabOrdersTab';
 import GeneralDentistryTab from './tabs/GeneralDentistryTab';
+import ClinicalPhotosTab from './tabs/ClinicalPhotosTab';
+import RadiographsTab from './tabs/RadiographsTab';
+import DocumentsTab from './tabs/DocumentsTab';
 
 interface PatientDetailsProps {
   patientId: string;
@@ -54,9 +57,9 @@ const TABS = [
   { id: 'timeline', label: 'السجل الزمني', enabled: true, group: 'سجلات' },
   { id: 'referrals', label: 'الإحالات', enabled: true, group: 'سجلات' },
   { id: 'labOrders', label: 'طلبات المختبر', enabled: true, group: 'سجلات' },
-  { id: 'photos', label: 'الصور', enabled: false, group: 'سجلات' },
-  { id: 'radiographs', label: 'الأشعة', enabled: false, group: 'سجلات' },
-  { id: 'documents', label: 'المستندات', enabled: false, group: 'سجلات' },
+  { id: 'photos', label: 'الصور السريرية', enabled: true, group: 'سجلات' },
+  { id: 'radiographs', label: 'الأشعة', enabled: true, group: 'سجلات' },
+  { id: 'documents', label: 'المستندات', enabled: true, group: 'سجلات' },
   { id: 'finance', label: 'المالية', enabled: true, group: 'مالي' },
   { id: 'messages', label: 'الرسائل', enabled: false, group: 'تواصل' },
   { id: 'portalAccess', label: 'بوابة المريض', enabled: false, group: 'بوابة' },
@@ -247,6 +250,9 @@ export default function PatientDetails({ patientId, canEdit, canDelete }: Patien
       {activeTab === 'timeline' && <TimelineViewTab entries={timeline} />}
       {activeTab === 'referrals' && <ReferralsTab patientId={patientId} />}
       {activeTab === 'labOrders' && <LabOrdersTab patientId={patientId} />}
+      {activeTab === 'photos' && <ClinicalPhotosTab patientId={patientId} canEdit={canEdit} />}
+      {activeTab === 'radiographs' && <RadiographsTab patientId={patientId} canEdit={canEdit} />}
+      {activeTab === 'documents' && <DocumentsTab patientId={patientId} canEdit={canEdit} />}
       {activeTab === 'finance' && <FinanceTab patientId={patientId} />}
 
       <ConfirmDialog
