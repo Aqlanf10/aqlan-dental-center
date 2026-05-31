@@ -20,6 +20,8 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<BookingRequest> BookingRequests => Set<BookingRequest>();
     public DbSet<DailyVisit> DailyVisits => Set<DailyVisit>();
+    public DbSet<ClinicRoom> ClinicRooms => Set<ClinicRoom>();
+    public DbSet<ClinicQueueItem> ClinicQueueItems => Set<ClinicQueueItem>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -156,6 +158,61 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.AppointmentId);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<ClinicRoom>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.RoomNumber).HasMaxLength(50);
+            entity.Property(e => e.Description).HasMaxLength(500);
+
+            entity.HasOne(e => e.CurrentDailyVisit)
+                .WithMany()
+                .HasForeignKey(e => e.CurrentDailyVisitId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.IsOccupied);
+        });
+
+        builder.Entity<ClinicQueueItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.QueueNumber).IsRequired();
+            entity.Property(e => e.Priority).IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.Notes).HasMaxLength(1000);
+
+            entity.HasOne(e => e.DailyVisit)
+                .WithMany()
+                .HasForeignKey(e => e.DailyVisitId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Room)
+                .WithMany()
+                .HasForeignKey(e => e.RoomId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.QueueDate);
+            entity.HasIndex(e => e.QueueNumber);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Priority);
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.RoomId);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => new { e.QueueDate, e.QueueNumber }).IsUnique();
         });
 
         SeedDefaultClinicSettings(builder);

@@ -147,6 +147,16 @@ export default function DailyVisitsBoard() {
     }
   };
 
+  const handleSendToQueue = async (dailyVisitId: string) => {
+    try {
+      await api.post(`/clinic-queue/daily-visits/${dailyVisitId}/send`, { priority: 0, notes: null });
+      alert('تم إرسال المريض للطابور بنجاح');
+      await fetchData();
+    } catch (err: unknown) {
+      alert(getErrorMessage(err) || 'فشل إرسال المريض للطابور');
+    }
+  };
+
   if (loading && !data) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -242,6 +252,7 @@ export default function DailyVisitsBoard() {
                 visit={visit}
                 onStatusChange={handleStatusChange}
                 onCancel={handleCancel}
+                onSendToQueue={handleSendToQueue}
                 canEdit={canEdit}
                 isDoctor={isDoctor}
               />
