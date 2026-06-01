@@ -4,8 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { AuthProvider } from '@/components/auth/AuthContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Pagination from '@/components/common/Pagination';
+import SearchInput from '@/components/common/SearchInput';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { api } from '@/lib/api';
 import type { InventoryItemDto, CreateInventoryItemRequest, UpdateInventoryItemRequest } from '@/types/api';
+import {
+  Package, AlertTriangle, Clock, Plus, Edit3, Trash2, XCircle,
+} from 'lucide-react';
 
 function InventoryContent() {
   const [items, setItems] = useState<InventoryItemDto[]>([]);
@@ -18,8 +23,10 @@ function InventoryContent() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItemDto | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<InventoryItemDto | null>(null);
 
   const [form, setForm] = useState({
     name: '', category: '', quantity: '0', minQuantity: '5', unit: '',
@@ -48,6 +55,7 @@ function InventoryContent() {
   const openCreate = () => {
     setEditingItem(null);
     setForm({ name: '', category: '', quantity: '0', minQuantity: '5', unit: '', costPerUnit: '', batchNumber: '', expiryDate: '' });
+    setError('');
     setShowCreate(true);
   };
 
@@ -59,12 +67,14 @@ function InventoryContent() {
       costPerUnit: item.costPerUnit != null ? String(item.costPerUnit) : '',
       batchNumber: item.batchNumber || '', expiryDate: item.expiryDate || '',
     });
+    setError('');
     setShowCreate(true);
   };
 
   const handleSave = async () => {
-    if (!form.name) return;
+    if (!form.name) { setError('يرجى إدخال اسم المادة'); return; }
     setSaving(true);
+    setError('');
     try {
       if (editingItem) {
         const req: UpdateInventoryItemRequest = {
@@ -85,34 +95,38 @@ function InventoryContent() {
       }
       setShowCreate(false);
       fetchItems();
-    } catch { /* error */ }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'حدث خطأ';
+      setError(msg);
+    }
     setSaving(false);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try { await api.delete(`/inventory/${deleteTarget.id}`); setDeleteTarget(null); fetchItems(); } catch { /* silent */ }
   };
 
   const filteredItems = items.filter(i =>
     !searchTerm || i.name.includes(searchTerm) || (i.batchNumber && i.batchNumber.includes(searchTerm))
   );
 
-  // Stats
   const lowStockCount = items.filter(i => i.isLowStock).length;
   const expiringSoonCount = items.filter(i => {
     if (!i.expiryDate) return false;
-    const expiry = new Date(i.expiryDate);
-    const now = new Date();
-    const diff = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+    const diff = (new Date(i.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     return diff <= 30 && diff > 0;
   }).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-navy">المخزون</h1>
+          <h1 className="text-2xl font-bold text-[#1a3a5c]">المخزون</h1>
           <p className="text-sm text-gray-500">إدارة المخزون والمواد</p>
         </div>
-        <button onClick={openCreate} className="inline-flex items-center gap-2 rounded-lg bg-orange px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-600">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          إضافة مادة
+        <button onClick={openCreate} className="inline-flex items-center gap-2 rounded-lg bg-[#f5922e] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#e07d1a]">
+          <Plus className="h-4 w-4" /> إضافة مادة
         </button>
       </div>
 
@@ -120,65 +134,44 @@ function InventoryContent() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-navy/5 text-navy">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">إجمالي المواد</p>
-              <p className="text-xl font-bold text-navy">{totalCount}</p>
-            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1a3a5c]/5 text-[#1a3a5c]"><Package className="h-5 w-5" /></div>
+            <div><p className="text-xs text-gray-500">إجمالي المواد</p><p className="text-xl font-bold text-[#1a3a5c]">{totalCount}</p></div>
           </div>
         </div>
         <div className="rounded-xl bg-white p-4 shadow-sm border border-red-100">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-600">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">مخزون منخفض</p>
-              <p className="text-xl font-bold text-red-600">{lowStockCount}</p>
-            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-600"><AlertTriangle className="h-5 w-5" /></div>
+            <div><p className="text-xs text-gray-500">مخزون منخفض</p><p className="text-xl font-bold text-red-600">{lowStockCount}</p></div>
           </div>
         </div>
         <div className="rounded-xl bg-white p-4 shadow-sm border border-yellow-100">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-50 text-yellow-600">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">ينتهي خلال 30 يوم</p>
-              <p className="text-xl font-bold text-yellow-600">{expiringSoonCount}</p>
-            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-50 text-yellow-600"><Clock className="h-5 w-5" /></div>
+            <div><p className="text-xs text-gray-500">ينتهي خلال 30 يوم</p><p className="text-xl font-bold text-yellow-600">{expiringSoonCount}</p></div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="بحث بالاسم أو رقم الدفعة..."
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange sm:w-72"
-        />
+        <div className="w-full sm:w-72">
+          <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder="بحث بالاسم أو رقم الدفعة..." />
+        </div>
         {categories.length > 0 && (
-          <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange">
+          <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }} className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]">
             <option value="">كل التصنيفات</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
         <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input type="checkbox" checked={lowStockOnly} onChange={(e) => { setLowStockOnly(e.target.checked); setPage(1); }}
-            className="h-4 w-4 rounded border-gray-300 text-orange focus:ring-orange" />
+          <input type="checkbox" checked={lowStockOnly} onChange={(e) => { setLowStockOnly(e.target.checked); setPage(1); }} className="h-4 w-4 rounded border-gray-300 text-[#f5922e] focus:ring-[#f5922e]" />
           المخزون المنخفض فقط
         </label>
       </div>
 
       {/* Table */}
       {loading ? (
-        <div className="flex h-32 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-orange border-t-transparent" /></div>
+        <div className="flex h-32 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-[#f5922e] border-t-transparent" /></div>
       ) : filteredItems.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-sm">
@@ -198,19 +191,15 @@ function InventoryContent() {
             <tbody className="divide-y divide-gray-50">
               {filteredItems.map((i) => (
                 <tr key={i.id} className={`hover:bg-gray-50 transition-colors ${i.isLowStock ? 'bg-red-50/30' : ''}`}>
-                  <td className="px-4 py-3 font-medium text-navy">{i.name}</td>
+                  <td className="px-4 py-3 font-medium text-[#1a3a5c]">{i.name}</td>
                   <td className="px-4 py-3 text-gray-500">{i.category || '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`font-semibold ${i.isLowStock ? 'text-red-600' : 'text-gray-700'}`}>{i.quantity}</span>
-                  </td>
+                  <td className="px-4 py-3"><span className={`font-semibold ${i.isLowStock ? 'text-red-600' : 'text-gray-700'}`}>{i.quantity}</span></td>
                   <td className="px-4 py-3 text-gray-500">{i.minQuantity}</td>
                   <td className="px-4 py-3 text-gray-500">{i.unit || '—'}</td>
                   <td className="px-4 py-3 text-gray-500">{i.costPerUnit != null ? `${i.costPerUnit} ر.س` : '—'}</td>
                   <td className="px-4 py-3 text-gray-500">
                     {i.expiryDate ? (
-                      <span className={new Date(i.expiryDate) < new Date() ? 'text-red-600 font-medium' : ''}>
-                        {new Date(i.expiryDate).toLocaleDateString('ar-SA')}
-                      </span>
+                      <span className={new Date(i.expiryDate) < new Date() ? 'text-red-600 font-medium' : ''}>{new Date(i.expiryDate).toLocaleDateString('ar-SA')}</span>
                     ) : '—'}
                   </td>
                   <td className="px-4 py-3">
@@ -219,9 +208,10 @@ function InventoryContent() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <button onClick={() => openEdit(i)} className="rounded-lg p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => openEdit(i)} className="rounded-lg p-1.5 text-gray-400 hover:bg-[#3d7ab5]/5 hover:text-[#3d7ab5] transition-colors" title="تعديل"><Edit3 className="h-4 w-4" /></button>
+                      <button onClick={() => setDeleteTarget(i)} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors" title="حذف"><Trash2 className="h-4 w-4" /></button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -229,13 +219,13 @@ function InventoryContent() {
           </table>
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-          <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-          <p className="mt-3 text-sm text-gray-500">لا توجد مواد في المخزون</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Package className="h-16 w-16 text-gray-300" />
+          <h3 className="mt-4 text-lg font-bold text-[#1a3a5c]">لا توجد مواد في المخزون</h3>
+          <p className="mt-2 text-sm text-gray-500">ابدأ بإضافة مواد جديدة</p>
         </div>
       )}
 
-      {/* Pagination */}
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
       {/* Create/Edit Modal */}
@@ -243,69 +233,43 @@ function InventoryContent() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCreate(false)}>
           <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-navy">{editingItem ? 'تعديل المادة' : 'إضافة مادة جديدة'}</h2>
-              <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+              <h2 className="text-lg font-bold text-[#1a3a5c]">{editingItem ? 'تعديل المادة' : 'إضافة مادة جديدة'}</h2>
+              <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600"><XCircle className="h-5 w-5" /></button>
             </div>
+            {error && <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>}
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">الاسم <span className="text-red-500">*</span></label>
-                  <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="اسم المادة"
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange" />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">التصنيف</label>
-                  <input type="text" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="مثال: مستهلكات"
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange" />
-                </div>
+                <div><label className="mb-1.5 block text-sm font-medium text-gray-700">الاسم <span className="text-red-500">*</span></label>
+                  <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="اسم المادة" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]" /></div>
+                <div><label className="mb-1.5 block text-sm font-medium text-gray-700">التصنيف</label>
+                  <input type="text" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="مثال: مستهلكات" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]" /></div>
               </div>
               <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">الكمية</label>
-                  <input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} min={0}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange" />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">الحد الأدنى</label>
-                  <input type="number" value={form.minQuantity} onChange={(e) => setForm({ ...form, minQuantity: e.target.value })} min={0}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange" />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">الوحدة</label>
-                  <input type="text" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="مثال: قطعة"
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange" />
-                </div>
+                <div><label className="mb-1.5 block text-sm font-medium text-gray-700">الكمية</label>
+                  <input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} min={0} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]" /></div>
+                <div><label className="mb-1.5 block text-sm font-medium text-gray-700">الحد الأدنى</label>
+                  <input type="number" value={form.minQuantity} onChange={(e) => setForm({ ...form, minQuantity: e.target.value })} min={0} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]" /></div>
+                <div><label className="mb-1.5 block text-sm font-medium text-gray-700">الوحدة</label>
+                  <input type="text" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="مثال: قطعة" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]" /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">تكلفة الوحدة</label>
-                  <input type="number" value={form.costPerUnit} onChange={(e) => setForm({ ...form, costPerUnit: e.target.value })} placeholder="0.00" min={0} step={0.01}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange" />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">رقم الدفعة</label>
-                  <input type="text" value={form.batchNumber} onChange={(e) => setForm({ ...form, batchNumber: e.target.value })}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange" />
-                </div>
+                <div><label className="mb-1.5 block text-sm font-medium text-gray-700">تكلفة الوحدة</label>
+                  <input type="number" value={form.costPerUnit} onChange={(e) => setForm({ ...form, costPerUnit: e.target.value })} placeholder="0.00" min={0} step={0.01} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]" /></div>
+                <div><label className="mb-1.5 block text-sm font-medium text-gray-700">رقم الدفعة</label>
+                  <input type="text" value={form.batchNumber} onChange={(e) => setForm({ ...form, batchNumber: e.target.value })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]" /></div>
               </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">تاريخ الانتهاء</label>
-                <input type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange focus:outline-none focus:ring-1 focus:ring-orange" />
-              </div>
+              <div><label className="mb-1.5 block text-sm font-medium text-gray-700">تاريخ الانتهاء</label>
+                <input type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]" /></div>
               <div className="flex gap-3 pt-2">
-                <button onClick={handleSave} disabled={saving || !form.name}
-                  className="flex-1 rounded-lg bg-orange px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50">
-                  {saving ? 'جاري الحفظ...' : editingItem ? 'تحديث' : 'إنشاء'}
-                </button>
+                <button onClick={handleSave} disabled={saving || !form.name} className="flex-1 rounded-lg bg-[#f5922e] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#e07d1a] disabled:opacity-50">{saving ? 'جاري الحفظ...' : editingItem ? 'تحديث' : 'إنشاء'}</button>
                 <button onClick={() => setShowCreate(false)} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      <ConfirmDialog isOpen={!!deleteTarget} title="حذف المادة" message={`هل أنت متأكد من حذف "${deleteTarget?.name || ''}"؟`} confirmLabel="حذف" variant="danger" onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
     </div>
   );
 }
@@ -314,7 +278,7 @@ export default function InventoryPage() {
   return (
     <AuthProvider>
       <DashboardLayout>
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-7xl font-[Tajawal]">
           <InventoryContent />
         </div>
       </DashboardLayout>

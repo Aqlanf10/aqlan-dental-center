@@ -3,11 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AuthProvider } from '@/components/auth/AuthContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import Pagination from '@/components/common/Pagination';
+import SearchInput from '@/components/common/SearchInput';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { api } from '@/lib/api';
 import type {
   OperationalExpenseDto,
   CreateOperationalExpenseRequest,
   PagedResult,
+  TreasuryDto,
 } from '@/types/api';
 import {
   ExpenseCategoryLabels,
@@ -15,6 +19,10 @@ import {
   ApprovalStatusColors,
   PaymentMethodLabels,
 } from '@/types/api';
+import {
+  Plus, CheckCircle, XCircle, Edit3, Trash2,
+  FileText, ChevronDown, ChevronUp, AlertCircle, Building2,
+} from 'lucide-react';
 
 function formatCurrency(amount: number): string {
   return `${amount.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
@@ -26,15 +34,27 @@ function formatDate(dateStr: string): string {
 
 function ExpensesContent() {
   const [expenses, setExpenses] = useState<OperationalExpenseDto[]>([]);
+  const [treasuries, setTreasuries] = useState<TreasuryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<number | ''>('');
   const [statusFilter, setStatusFilter] = useState<number | ''>('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<OperationalExpenseDto | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Delete dialog
+  const [deleteTarget, setDeleteTarget] = useState<OperationalExpenseDto | null>(null);
+
+  // Reject dialog
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const [form, setForm] = useState({
     category: 0,
@@ -55,37 +75,87 @@ function ExpensesContent() {
       if (statusFilter !== '') url += `&approvalStatus=${statusFilter}`;
       if (dateFrom) url += `&dateFrom=${dateFrom}`;
       if (dateTo) url += `&dateTo=${dateTo}`;
-      const res = await api.get<PagedResult<OperationalExpenseDto>>(url);
-      setExpenses(res.data?.items ?? []);
-      setTotalCount(res.data?.totalCount ?? 0);
+      if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
+      const [expRes, tresRes] = await Promise.all([
+        api.get<PagedResult<OperationalExpenseDto>>(url),
+        api.get<TreasuryDto[]>('/treasuries').catch(() => ({ data: [] as TreasuryDto[] })),
+      ]);
+      setExpenses(expRes.data?.items ?? []);
+      setTotalCount(expRes.data?.totalCount ?? 0);
+      setTreasuries(tresRes.data ?? []);
     } catch {
       // silent
     }
     setLoading(false);
-  }, [page, categoryFilter, statusFilter, dateFrom, dateTo]);
+  }, [page, categoryFilter, statusFilter, dateFrom, dateTo, searchTerm]);
 
   useEffect(() => {
     loadExpenses();
   }, [loadExpenses]);
 
-  const handleCreate = async () => {
-    if (!form.amount || Number(form.amount) <= 0) return;
+  const resetForm = () => {
+    setForm({
+      category: 0, description: '', amount: '',
+      expenseDate: new Date().toISOString().split('T')[0],
+      paymentMethod: 0, notes: '',
+    });
+    setEditingExpense(null);
+    setError('');
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setShowCreate(true);
+  };
+
+  const openEdit = (exp: OperationalExpenseDto) => {
+    setEditingExpense(exp);
+    setForm({
+      category: exp.category,
+      description: exp.description || '',
+      amount: String(exp.amount),
+      expenseDate: exp.expenseDate.split('T')[0],
+      paymentMethod: exp.paymentMethod,
+      notes: exp.notes || '',
+    });
+    setShowCreate(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.amount || Number(form.amount) <= 0) {
+      setError('يرجى إدخال مبلغ صحيح');
+      return;
+    }
     setSaving(true);
+    setError('');
     try {
-      const req: CreateOperationalExpenseRequest = {
-        category: form.category,
-        description: form.description || null,
-        amount: Number(form.amount),
-        expenseDate: form.expenseDate,
-        paymentMethod: form.paymentMethod,
-        notes: form.notes || null,
-      };
-      await api.post('/expenses', req);
+      if (editingExpense) {
+        const req: CreateOperationalExpenseRequest = {
+          category: form.category,
+          description: form.description || null,
+          amount: Number(form.amount),
+          expenseDate: form.expenseDate,
+          paymentMethod: form.paymentMethod,
+          notes: form.notes || null,
+        };
+        await api.put(`/expenses/${editingExpense.id}`, req);
+      } else {
+        const req: CreateOperationalExpenseRequest = {
+          category: form.category,
+          description: form.description || null,
+          amount: Number(form.amount),
+          expenseDate: form.expenseDate,
+          paymentMethod: form.paymentMethod,
+          notes: form.notes || null,
+        };
+        await api.post('/expenses', req);
+      }
       setShowCreate(false);
-      setForm({ category: 0, description: '', amount: '', expenseDate: new Date().toISOString().split('T')[0], paymentMethod: 0, notes: '' });
+      resetForm();
       loadExpenses();
-    } catch {
-      // silent
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'حدث خطأ أثناء الحفظ';
+      setError(msg);
     }
     setSaving(false);
   };
@@ -99,9 +169,23 @@ function ExpensesContent() {
     }
   };
 
-  const handleReject = async (id: string) => {
+  const handleReject = async () => {
+    if (!rejectTarget) return;
     try {
-      await api.post(`/expenses/${id}/reject`);
+      await api.post(`/expenses/${rejectTarget}/reject`, { rejectionReason: rejectionReason || null });
+      setRejectTarget(null);
+      setRejectionReason('');
+      loadExpenses();
+    } catch {
+      // silent
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/expenses/${deleteTarget.id}`);
+      setDeleteTarget(null);
       loadExpenses();
     } catch {
       // silent
@@ -110,15 +194,68 @@ function ExpensesContent() {
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
+  // Stats
+  const pendingCount = expenses.filter(e => e.approvalStatus === 0).length;
+  const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
+
   return (
     <div className="space-y-6" dir="rtl">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1a3a5c]">المصروفات</h1>
-        <p className="text-sm text-gray-500">إدارة المصروفات التشغيلية والاعتماد</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a3a5c]">المصروفات</h1>
+          <p className="text-sm text-gray-500">إدارة المصروفات التشغيلية والاعتماد</p>
+        </div>
+        <button
+          onClick={openCreate}
+          className="inline-flex items-center gap-2 rounded-lg bg-[#f5922e] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#e07d1a]"
+        >
+          <Plus className="h-4 w-4" />
+          مصروف جديد
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1a3a5c]/5 text-[#1a3a5c]">
+              <FileText className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">إجمالي المصروفات</p>
+              <p className="text-xl font-bold text-[#1a3a5c]">{totalCount}</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl bg-white p-4 shadow-sm border border-yellow-100">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-50 text-yellow-600">
+              <AlertCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">بانتظار الاعتماد</p>
+              <p className="text-xl font-bold text-yellow-600">{pendingCount}</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#3d7ab5]/10 text-[#3d7ab5]">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">إجمالي المبلغ</p>
+              <p className="text-xl font-bold text-[#1a3a5c]">{formatCurrency(totalAmount)}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Filter Bar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
+        <div className="w-full sm:w-64">
+          <SearchInput value={searchTerm} onChange={(val) => { setSearchTerm(val); setPage(1); }} placeholder="بحث بالوصف أو الرقم..." />
+        </div>
         <select
           value={categoryFilter}
           onChange={(e) => { setCategoryFilter(e.target.value === '' ? '' : Number(e.target.value)); setPage(1); }}
@@ -153,16 +290,20 @@ function ExpensesContent() {
           className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]"
           placeholder="إلى تاريخ"
         />
-        <button
-          onClick={() => setShowCreate(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#f5922e] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e07d1a]"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          مصروف جديد
-        </button>
       </div>
+
+      {/* Treasury Cards */}
+      {treasuries.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {treasuries.map((t) => (
+            <div key={t.id} className="rounded-xl bg-white p-4 shadow-sm border border-gray-100">
+              <p className="text-sm font-medium text-gray-500">{t.name}</p>
+              <p className="mt-1 text-xl font-bold text-[#1a3a5c]">{formatCurrency(t.balance)}</p>
+              <p className="text-xs text-gray-400">{t.typeDisplay}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Table */}
       {loading ? (
@@ -174,6 +315,7 @@ function ExpensesContent() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="px-4 py-3 text-right font-medium text-gray-600 w-8"></th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">رقم المصروف</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">الفئة</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">الوصف</th>
@@ -186,59 +328,99 @@ function ExpensesContent() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {expenses.map((exp) => (
-                <tr key={exp.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-[#1a3a5c]">{exp.expenseNumber}</td>
-                  <td className="px-4 py-3 text-gray-700">{ExpenseCategoryLabels[exp.category] || exp.categoryDisplay}</td>
-                  <td className="px-4 py-3 max-w-[200px] truncate text-gray-500">{exp.description || '—'}</td>
-                  <td className="px-4 py-3 text-gray-700">{formatCurrency(exp.amount)}</td>
-                  <td className="px-4 py-3 text-gray-700">{PaymentMethodLabels[exp.paymentMethod] || exp.paymentMethodDisplay}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${ApprovalStatusColors[exp.approvalStatus] || 'bg-gray-100 text-gray-700'}`}>
-                      {ApprovalStatusLabels[exp.approvalStatus] || exp.approvalStatusDisplay}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">{formatDate(exp.expenseDate)}</td>
-                  <td className="px-4 py-3">
-                    {exp.approvalStatus === 0 && (
-                      <div className="flex gap-2">
-                        <button onClick={() => handleApprove(exp.id)} className="rounded px-2 py-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100">اعتماد</button>
-                        <button onClick={() => handleReject(exp.id)} className="rounded px-2 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100">رفض</button>
+                <>
+                  <tr key={exp.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <button onClick={() => setExpandedId(expandedId === exp.id ? null : exp.id)} className="text-gray-400 hover:text-[#3d7ab5]">
+                        {expandedId === exp.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-[#1a3a5c]">{exp.expenseNumber}</td>
+                    <td className="px-4 py-3 text-gray-700">{ExpenseCategoryLabels[exp.category] || exp.categoryDisplay}</td>
+                    <td className="px-4 py-3 max-w-[200px] truncate text-gray-500">{exp.description || '—'}</td>
+                    <td className="px-4 py-3 text-gray-700 font-medium">{formatCurrency(exp.amount)}</td>
+                    <td className="px-4 py-3 text-gray-700">{PaymentMethodLabels[exp.paymentMethod] || exp.paymentMethodDisplay}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${ApprovalStatusColors[exp.approvalStatus] || 'bg-gray-100 text-gray-700'}`}>
+                        {ApprovalStatusLabels[exp.approvalStatus] || exp.approvalStatusDisplay}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">{formatDate(exp.expenseDate)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        {exp.approvalStatus === 0 && (
+                          <>
+                            <button onClick={() => handleApprove(exp.id)} className="rounded p-1.5 text-green-600 bg-green-50 hover:bg-green-100 transition-colors" title="اعتماد">
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => { setRejectTarget(exp.id); setRejectionReason(''); }} className="rounded p-1.5 text-red-600 bg-red-50 hover:bg-red-100 transition-colors" title="رفض">
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                        {exp.approvalStatus === 0 && (
+                          <button onClick={() => openEdit(exp)} className="rounded p-1.5 text-[#3d7ab5] bg-[#3d7ab5]/5 hover:bg-[#3d7ab5]/10 transition-colors" title="تعديل">
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button onClick={() => setDeleteTarget(exp)} className="rounded p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors" title="حذف">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
-                    )}
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
+                  {expandedId === exp.id && (
+                    <tr key={`${exp.id}-detail`} className="bg-gray-50">
+                      <td colSpan={9} className="px-8 py-3">
+                        <div className="grid gap-3 sm:grid-cols-3 text-sm">
+                          {exp.approvedByName && (
+                            <div><span className="text-gray-500">اعتمد بواسطة:</span> <span className="font-medium text-[#1a3a5c]">{exp.approvedByName}</span></div>
+                          )}
+                          {exp.approvedAt && (
+                            <div><span className="text-gray-500">تاريخ الاعتماد:</span> <span className="font-medium text-[#1a3a5c]">{formatDate(exp.approvedAt)}</span></div>
+                          )}
+                          {exp.rejectionReason && (
+                            <div className="sm:col-span-3"><span className="text-gray-500">سبب الرفض:</span> <span className="font-medium text-red-600">{exp.rejectionReason}</span></div>
+                          )}
+                          {exp.notes && (
+                            <div className="sm:col-span-3"><span className="text-gray-500">ملاحظات:</span> <span className="text-gray-700">{exp.notes}</span></div>
+                          )}
+                          {exp.createdBy && (
+                            <div><span className="text-gray-500">أنشئ بواسطة:</span> <span className="text-gray-700">{exp.createdBy}</span></div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <svg className="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
-          </svg>
-          <p className="mt-3 text-sm text-gray-400">لا توجد مصروفات</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <FileText className="h-16 w-16 text-gray-300" />
+          <h3 className="mt-4 text-lg font-bold text-[#1a3a5c]">لا توجد مصروفات</h3>
+          <p className="mt-2 text-sm text-gray-500">ابدأ بإضافة مصروف جديد</p>
         </div>
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-gray-50">السابق</button>
-          <span className="text-sm text-gray-600">صفحة {page} من {totalPages}</span>
-          <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-gray-50">التالي</button>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-      {/* Create Expense Modal */}
+      {/* Create/Edit Modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCreate(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => { setShowCreate(false); resetForm(); }}>
           <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-[#1a3a5c]">مصروف جديد</h2>
-              <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              <h2 className="text-lg font-bold text-[#1a3a5c]">{editingExpense ? 'تعديل المصروف' : 'مصروف جديد'}</h2>
+              <button onClick={() => { setShowCreate(false); resetForm(); }} className="text-gray-400 hover:text-gray-600">
+                <XCircle className="h-5 w-5" />
               </button>
             </div>
+            {error && (
+              <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>
+            )}
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -273,10 +455,40 @@ function ExpensesContent() {
                 <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="ملاحظات إضافية..." className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]" />
               </div>
               <div className="flex gap-3 pt-2">
-                <button onClick={handleCreate} disabled={saving || !form.amount} className="flex-1 rounded-lg bg-[#f5922e] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#e07d1a] disabled:opacity-50">
-                  {saving ? 'جاري الحفظ...' : 'إنشاء المصروف'}
+                <button onClick={handleSave} disabled={saving || !form.amount} className="flex-1 rounded-lg bg-[#f5922e] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#e07d1a] disabled:opacity-50">
+                  {saving ? 'جاري الحفظ...' : editingExpense ? 'تحديث' : 'إنشاء المصروف'}
                 </button>
-                <button onClick={() => setShowCreate(false)} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
+                <button onClick={() => { setShowCreate(false); resetForm(); }} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="حذف المصروف"
+        message={`هل أنت متأكد من حذف المصروف رقم ${deleteTarget?.expenseNumber || ''}؟ لا يمكن التراجع عن هذا الإجراء.`}
+        confirmLabel="حذف"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Reject Dialog */}
+      {rejectTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setRejectTarget(null)}>
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-[#1a3a5c] mb-4">رفض المصروف</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">سبب الرفض</label>
+                <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} rows={3} placeholder="أدخل سبب الرفض..." className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]" />
+              </div>
+              <div className="flex gap-3">
+                <button onClick={handleReject} className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors">رفض</button>
+                <button onClick={() => setRejectTarget(null)} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
               </div>
             </div>
           </div>

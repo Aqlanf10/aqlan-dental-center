@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AuthProvider } from '@/components/auth/AuthContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import Pagination from '@/components/common/Pagination';
 import { api } from '@/lib/api';
 import type {
   DoctorCommissionPaymentDto,
   DoctorDto,
+  ClinicServiceDto,
   PagedResult,
   PayCommissionRequest,
 } from '@/types/api';
@@ -15,6 +17,10 @@ import {
   CommissionStatusColors,
   PaymentMethodLabels,
 } from '@/types/api';
+import {
+  DollarSign, CheckCircle, CreditCard,
+  Percent, Users, XCircle,
+} from 'lucide-react';
 
 function formatCurrency(amount: number): string {
   return `${amount.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
@@ -29,6 +35,7 @@ type TabKey = 'commissions' | 'defaults';
 function CommissionsContent() {
   const [commissions, setCommissions] = useState<DoctorCommissionPaymentDto[]>([]);
   const [doctors, setDoctors] = useState<DoctorDto[]>([]);
+  const [services, setServices] = useState<ClinicServiceDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -37,9 +44,11 @@ function CommissionsContent() {
   const [activeTab, setActiveTab] = useState<TabKey>('commissions');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showCalculateModal, setShowCalculateModal] = useState(false);
   const [payMethod, setPayMethod] = useState(0);
   const [payNotes, setPayNotes] = useState('');
   const [paying, setPaying] = useState(false);
+  const [calculating, setCalculating] = useState(false);
 
   const pageSize = 20;
 
@@ -49,13 +58,15 @@ function CommissionsContent() {
       let url = `/commissions?page=${page}&pageSize=${pageSize}`;
       if (doctorFilter) url += `&doctorId=${doctorFilter}`;
       if (statusFilter !== '') url += `&status=${statusFilter}`;
-      const [comRes, docRes] = await Promise.all([
+      const [comRes, docRes, svcRes] = await Promise.all([
         api.get<PagedResult<DoctorCommissionPaymentDto>>(url),
         api.get<DoctorDto[]>('/doctors').catch(() => ({ data: [] as DoctorDto[] })),
+        api.get<ClinicServiceDto[]>('/clinic-services?pageSize=200').catch(() => ({ data: [] as ClinicServiceDto[] })),
       ]);
       setCommissions(comRes.data?.items ?? []);
       setTotalCount(comRes.data?.totalCount ?? 0);
       setDoctors((docRes.data ?? []).filter((d: DoctorDto) => d.isActive));
+      setServices(svcRes.data ?? []);
     } catch {
       // silent
     }
@@ -71,6 +82,14 @@ function CommissionsContent() {
     if (next.has(id)) next.delete(id);
     else next.add(id);
     setSelectedIds(next);
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === commissions.length && commissions.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(commissions.map((c) => c.id)));
+    }
   };
 
   const handleApprove = async () => {
@@ -104,17 +123,73 @@ function CommissionsContent() {
     setPaying(false);
   };
 
-  const totalPages = Math.ceil(totalCount / pageSize);
+  const handleCalculate = async () => {
+    setCalculating(true);
+    try {
+      await api.post('/commissions/calculate');
+      setShowCalculateModal(false);
+      loadData();
+    } catch {
+      // silent
+    }
+    setCalculating(false);
+  };
 
-  const totalSelectedAmount = commissions
-    .filter((c) => selectedIds.has(c.id))
-    .reduce((sum, c) => sum + c.commissionAmount, 0);
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const totalSelectedAmount = commissions.filter((c) => selectedIds.has(c.id)).reduce((sum, c) => sum + c.commissionAmount, 0);
+  const pendingAmount = commissions.filter(c => c.status === 0).reduce((sum, c) => sum + c.commissionAmount, 0);
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1a3a5c]">عمولات الأطباء</h1>
-        <p className="text-sm text-gray-500">إدارة عمولات الأطباء والمدفوعات</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a3a5c]">عمولات الأطباء</h1>
+          <p className="text-sm text-gray-500">إدارة عمولات الأطباء والمدفوعات</p>
+        </div>
+        <button
+          onClick={() => setShowCalculateModal(true)}
+          className="inline-flex items-center gap-2 rounded-lg bg-[#3d7ab5] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2c6494]"
+        >
+          <Percent className="h-4 w-4" />
+          حساب العمولات
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1a3a5c]/5 text-[#1a3a5c]">
+              <DollarSign className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">إجمالي العمولات</p>
+              <p className="text-xl font-bold text-[#1a3a5c]">{totalCount}</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl bg-white p-4 shadow-sm border border-yellow-100">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-50 text-yellow-600">
+              <DollarSign className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">عمولات معلقة</p>
+              <p className="text-xl font-bold text-yellow-600">{formatCurrency(pendingAmount)}</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#3d7ab5]/10 text-[#3d7ab5]">
+              <Users className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">أطباء نشطين</p>
+              <p className="text-xl font-bold text-[#1a3a5c]">{doctors.length}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -125,7 +200,7 @@ function CommissionsContent() {
 
       {activeTab === 'commissions' && (
         <>
-          {/* Filters */}
+          {/* Filters & Bulk Actions */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
             <select value={doctorFilter} onChange={(e) => { setDoctorFilter(e.target.value); setPage(1); }} className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-[#f5922e] focus:outline-none focus:ring-1 focus:ring-[#f5922e]">
               <option value="">كل الأطباء</option>
@@ -138,8 +213,12 @@ function CommissionsContent() {
             {selectedIds.size > 0 && (
               <div className="flex gap-2 items-center">
                 <span className="text-sm text-gray-600">المحدد: {formatCurrency(totalSelectedAmount)}</span>
-                <button onClick={handleApprove} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700">اعتماد المحدد</button>
-                <button onClick={() => setShowPayModal(true)} className="rounded-lg bg-[#3d7ab5] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2c6494]">صرف المحدد</button>
+                <button onClick={handleApprove} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 inline-flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" /> اعتماد
+                </button>
+                <button onClick={() => setShowPayModal(true)} className="rounded-lg bg-[#3d7ab5] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2c6494] inline-flex items-center gap-1">
+                  <CreditCard className="h-3 w-3" /> صرف
+                </button>
               </div>
             )}
           </div>
@@ -155,11 +234,12 @@ function CommissionsContent() {
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
                     <th className="px-4 py-3 text-right">
-                      <input type="checkbox" checked={selectedIds.size === commissions.length && commissions.length > 0} onChange={() => { if (selectedIds.size === commissions.length) setSelectedIds(new Set()); else setSelectedIds(new Set(commissions.map((c) => c.id))); }} className="rounded border-gray-300" />
+                      <input type="checkbox" checked={selectedIds.size === commissions.length && commissions.length > 0} onChange={toggleAll} className="rounded border-gray-300" />
                     </th>
                     <th className="px-4 py-3 text-right font-medium text-gray-600">الطبيب</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-600">الخدمة</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-600">المريض</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-600">رقم الفاتورة</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-600">مبلغ العمولة</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-600">النسبة</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-600">الحالة</th>
@@ -175,7 +255,8 @@ function CommissionsContent() {
                       <td className="px-4 py-3 font-medium text-[#1a3a5c]">د. {c.doctorName}</td>
                       <td className="px-4 py-3 text-gray-700">{c.serviceNameSnapshot || '—'}</td>
                       <td className="px-4 py-3 text-gray-500">{c.patientName || '—'}</td>
-                      <td className="px-4 py-3 text-gray-700">{formatCurrency(c.commissionAmount)}</td>
+                      <td className="px-4 py-3 text-gray-500 font-mono text-xs">{c.invoiceNumber || '—'}</td>
+                      <td className="px-4 py-3 text-gray-700 font-medium">{formatCurrency(c.commissionAmount)}</td>
                       <td className="px-4 py-3 text-gray-500">{c.commissionPercentage}%</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${CommissionStatusColors[c.status] || 'bg-gray-100 text-gray-700'}`}>
@@ -189,32 +270,49 @@ function CommissionsContent() {
               </table>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <svg className="h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="mt-3 text-sm text-gray-400">لا توجد عمولات</p>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <DollarSign className="h-16 w-16 text-gray-300" />
+              <h3 className="mt-4 text-lg font-bold text-[#1a3a5c]">لا توجد عمولات</h3>
+              <p className="mt-2 text-sm text-gray-500">اضغط على &quot;حساب العمولات&quot; لحساب العمولات المستحقة</p>
             </div>
           )}
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2">
-              <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-gray-50">السابق</button>
-              <span className="text-sm text-gray-600">صفحة {page} من {totalPages}</span>
-              <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm disabled:opacity-50 hover:bg-gray-50">التالي</button>
-            </div>
-          )}
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       )}
 
       {activeTab === 'defaults' && (
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <h3 className="mb-4 font-bold text-[#1a3a5c]">نسب العمولة الافتراضية حسب الخدمة</h3>
-          <p className="text-sm text-gray-500 mb-4">يمكن تعيين نسبة عمولة افتراضية لكل خدمة سريرية. سيتم تطبيقها تلقائيًا عند إنشاء فاتورة.</p>
-          <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-            <p className="text-sm text-gray-400">سيتم ربط نسب العمولة من صفحة إعدادات الخدمات السريرية</p>
-          </div>
+          <p className="text-sm text-gray-500 mb-4">يمكن تعيين نسبة عمولة افتراضية لكل خدمة سريرية. سيتم تطبيقها تلقائيًا عند حساب العمولات.</p>
+          {services.length > 0 ? (
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="px-4 py-3 text-right font-medium text-gray-600">الخدمة</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-600">الكود</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-600">السعر الافتراضي</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-600">الفئة</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {services.filter(s => s.isActive).map((s) => (
+                    <tr key={s.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium text-[#1a3a5c]">{s.arabicName}</td>
+                      <td className="px-4 py-3 text-gray-500 font-mono text-xs">{s.code}</td>
+                      <td className="px-4 py-3 text-gray-700">{formatCurrency(s.defaultPrice)}</td>
+                      <td className="px-4 py-3 text-gray-500">{s.categoryDisplay}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
+              <p className="text-sm text-gray-400">لا توجد خدمات مسجلة حاليًا</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -225,7 +323,7 @@ function CommissionsContent() {
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-[#1a3a5c]">صرف العمولات</h2>
               <button onClick={() => setShowPayModal(false)} className="text-gray-400 hover:text-gray-600">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <XCircle className="h-5 w-5" />
               </button>
             </div>
             <div className="space-y-4">
@@ -246,6 +344,27 @@ function CommissionsContent() {
                 </button>
                 <button onClick={() => setShowPayModal(false)} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Calculate Modal */}
+      {showCalculateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCalculateModal(false)}>
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[#1a3a5c]">حساب العمولات</h2>
+              <button onClick={() => setShowCalculateModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">سيتم حساب العمولات المستحقة للأطباء بناءً على الفواتير الصادرة. هل تريد المتابعة؟</p>
+            <div className="flex gap-3">
+              <button onClick={handleCalculate} disabled={calculating} className="flex-1 rounded-lg bg-[#3d7ab5] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#2c6494] disabled:opacity-50">
+                {calculating ? 'جاري الحساب...' : 'حساب العمولات'}
+              </button>
+              <button onClick={() => setShowCalculateModal(false)} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50">إلغاء</button>
             </div>
           </div>
         </div>
