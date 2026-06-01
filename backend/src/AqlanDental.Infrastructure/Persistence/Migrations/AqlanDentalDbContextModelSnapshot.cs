@@ -58,6 +58,9 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
@@ -158,6 +161,59 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.HasIndex("Status");
 
                     b.ToTable("Appointments");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.AuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NewData")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OldData")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Resource")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ResourceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Action");
+
+                    b.HasIndex("Resource");
+
+                    b.HasIndex("ResourceId");
+
+                    b.HasIndex("Timestamp");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AuditLogs");
                 });
 
             modelBuilder.Entity("AqlanDental.Domain.Entities.BookingRequest", b =>
@@ -694,6 +750,64 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("AqlanDental.Domain.Entities.ClinicalPhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("OrthoCaseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PhotoDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PhotoType")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Stage")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("OrthoCaseId");
+
+                    b.HasIndex("PatientId");
+
+                    b.ToTable("ClinicalPhotos");
+                });
+
             modelBuilder.Entity("AqlanDental.Domain.Entities.ClinicalProcedure", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1157,6 +1271,93 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.ToTable("Doctors");
                 });
 
+            modelBuilder.Entity("AqlanDental.Domain.Entities.DoctorCommissionPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CashFlowTransactionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("CommissionAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("CommissionPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("InvoiceLineItemId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("LabCost")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("MaterialCost")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("NetCommissionable")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CashFlowTransactionId");
+
+                    b.HasIndex("DoctorId");
+
+                    b.HasIndex("InvoiceLineItemId");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("DoctorCommissionPayments");
+                });
+
             modelBuilder.Entity("AqlanDental.Domain.Entities.DoctorWeeklySchedule", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1539,6 +1740,136 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.ToTable("InvoiceLineItems");
                 });
 
+            modelBuilder.Entity("AqlanDental.Domain.Entities.JournalEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CashierSessionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DocumentType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("EntryDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntryNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("FinancialDocumentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsPosted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsReversal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PerformedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ReversalOfEntryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ReversedByEntryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("TreasuryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CashierSessionId");
+
+                    b.HasIndex("DocumentType");
+
+                    b.HasIndex("EntryDate");
+
+                    b.HasIndex("EntryNumber")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsPosted");
+
+                    b.HasIndex("TreasuryId");
+
+                    b.ToTable("JournalEntries");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.JournalLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AccountType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Credit")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Debit")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("JournalEntryId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountType");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("JournalEntryId");
+
+                    b.ToTable("JournalLines");
+                });
+
             modelBuilder.Entity("AqlanDental.Domain.Entities.LabOrder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1684,6 +2015,160 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("MedicalHistories");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("IsRead");
+
+                    b.HasIndex("Type");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.OperationalExpense", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ApprovalStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CashFlowTransactionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CashierSessionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExpenseNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsPostedToLedger")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("JournalEntryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("LabOrderId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReceiptAttachmentUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SupplierName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("TreasuryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovalStatus");
+
+                    b.HasIndex("CashFlowTransactionId");
+
+                    b.HasIndex("CashierSessionId");
+
+                    b.HasIndex("Category");
+
+                    b.HasIndex("ExpenseNumber")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("JournalEntryId");
+
+                    b.HasIndex("LabOrderId");
+
+                    b.HasIndex("TreasuryId");
+
+                    b.ToTable("OperationalExpenses");
                 });
 
             modelBuilder.Entity("AqlanDental.Domain.Entities.OrthoCase", b =>
@@ -1833,6 +2318,42 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.ToTable("OrthoVisits");
                 });
 
+            modelBuilder.Entity("AqlanDental.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetTokens");
+                });
+
             modelBuilder.Entity("AqlanDental.Domain.Entities.Patient", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1897,6 +2418,66 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.HasIndex("PhoneNumber");
 
                     b.ToTable("Patients");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.PatientDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DocumentType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("FileSize")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSigned")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("MimeType")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SignedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentType");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("PatientId");
+
+                    b.ToTable("PatientDocuments");
                 });
 
             modelBuilder.Entity("AqlanDental.Domain.Entities.Payment", b =>
@@ -2041,6 +2622,171 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.ToTable("Prescriptions");
                 });
 
+            modelBuilder.Entity("AqlanDental.Domain.Entities.PurchaseOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OrderNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("OrderNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SupplierId");
+
+                    b.ToTable("PurchaseOrders");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.PurchaseOrderLineItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("InventoryItemId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ItemName")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PurchaseOrderId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReceivedQuantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryItemId");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("PurchaseOrderId");
+
+                    b.ToTable("PurchaseOrderLineItems");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.Radiograph", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("DoctorId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("FileSize")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("MimeType")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ToothRelated")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("XrayDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("XrayType")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DoctorId");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("PatientId");
+
+                    b.HasIndex("XrayType");
+
+                    b.ToTable("Radiographs");
+                });
+
             modelBuilder.Entity("AqlanDental.Domain.Entities.Referral", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2167,6 +2913,157 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Settings");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.Supplier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Balance")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactPerson")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("Suppliers");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.SupplierBill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BillNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PaidAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BillNumber")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SupplierId");
+
+                    b.ToTable("SupplierBills");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.SupplierBillPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReferenceNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SupplierBillId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("TreasuryId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("SupplierBillId");
+
+                    b.HasIndex("TreasuryId");
+
+                    b.ToTable("SupplierBillPayments");
                 });
 
             modelBuilder.Entity("AqlanDental.Domain.Entities.SurgeryCase", b =>
@@ -2502,6 +3399,95 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.ToTable("TreatmentStages");
                 });
 
+            modelBuilder.Entity("AqlanDental.Domain.Entities.VaultTransfer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CashFlowTransactionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CashierSessionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DepositSource")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DepositSourceDescription")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("DestinationTreasuryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("JournalEntryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SourceTreasuryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TransferNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CashFlowTransactionId");
+
+                    b.HasIndex("CashierSessionId");
+
+                    b.HasIndex("DestinationTreasuryId");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("JournalEntryId");
+
+                    b.HasIndex("SourceTreasuryId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TransferNumber")
+                        .IsUnique();
+
+                    b.ToTable("VaultTransfers");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -2744,6 +3730,24 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.Navigation("CurrentDailyVisit");
                 });
 
+            modelBuilder.Entity("AqlanDental.Domain.Entities.ClinicalPhoto", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.OrthoCase", "OrthoCase")
+                        .WithMany()
+                        .HasForeignKey("OrthoCaseId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OrthoCase");
+
+                    b.Navigation("Patient");
+                });
+
             modelBuilder.Entity("AqlanDental.Domain.Entities.ClinicalProcedure", b =>
                 {
                     b.HasOne("AqlanDental.Domain.Entities.ClinicalVisit", "ClinicalVisit")
@@ -2870,6 +3874,31 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("AqlanDental.Domain.Entities.DoctorCommissionPayment", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.CashFlowTransaction", "CashFlowTransaction")
+                        .WithMany()
+                        .HasForeignKey("CashFlowTransactionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.Doctor", "Doctor")
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AqlanDental.Domain.Entities.InvoiceLineItem", "InvoiceLineItem")
+                        .WithMany()
+                        .HasForeignKey("InvoiceLineItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CashFlowTransaction");
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("InvoiceLineItem");
+                });
+
             modelBuilder.Entity("AqlanDental.Domain.Entities.DoctorWeeklySchedule", b =>
                 {
                     b.HasOne("AqlanDental.Domain.Entities.Doctor", "Doctor")
@@ -2949,6 +3978,41 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.Navigation("Invoice");
                 });
 
+            modelBuilder.Entity("AqlanDental.Domain.Entities.JournalEntry", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.CashierSession", "CashierSession")
+                        .WithMany()
+                        .HasForeignKey("CashierSessionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.Treasury", "Treasury")
+                        .WithMany()
+                        .HasForeignKey("TreasuryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("CashierSession");
+
+                    b.Navigation("Treasury");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.JournalLine", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.JournalEntry", "JournalEntry")
+                        .WithMany("Lines")
+                        .HasForeignKey("JournalEntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JournalEntry");
+                });
+
             modelBuilder.Entity("AqlanDental.Domain.Entities.LabOrder", b =>
                 {
                     b.HasOne("AqlanDental.Domain.Entities.Doctor", "Doctor")
@@ -2976,6 +4040,55 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.Notification", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.OperationalExpense", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.CashFlowTransaction", "CashFlowTransaction")
+                        .WithMany()
+                        .HasForeignKey("CashFlowTransactionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.CashierSession", "CashierSession")
+                        .WithMany()
+                        .HasForeignKey("CashierSessionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.JournalEntry", "JournalEntry")
+                        .WithMany()
+                        .HasForeignKey("JournalEntryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.LabOrder", "LabOrder")
+                        .WithMany()
+                        .HasForeignKey("LabOrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.Treasury", "Treasury")
+                        .WithMany()
+                        .HasForeignKey("TreasuryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CashFlowTransaction");
+
+                    b.Navigation("CashierSession");
+
+                    b.Navigation("JournalEntry");
+
+                    b.Navigation("LabOrder");
+
+                    b.Navigation("Treasury");
                 });
 
             modelBuilder.Entity("AqlanDental.Domain.Entities.OrthoCase", b =>
@@ -3012,6 +4125,28 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.Navigation("Doctor");
 
                     b.Navigation("OrthoCase");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.ApplicationUser", "User")
+                        .WithMany("PasswordResetTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.PatientDocument", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("AqlanDental.Domain.Entities.Payment", b =>
@@ -3073,6 +4208,53 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("AqlanDental.Domain.Entities.PurchaseOrder", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.Supplier", "Supplier")
+                        .WithMany("PurchaseOrders")
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.PurchaseOrderLineItem", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.InventoryItem", "InventoryItem")
+                        .WithMany()
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.PurchaseOrder", "PurchaseOrder")
+                        .WithMany("LineItems")
+                        .HasForeignKey("PurchaseOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InventoryItem");
+
+                    b.Navigation("PurchaseOrder");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.Radiograph", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.Doctor", "Doctor")
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Patient");
+                });
+
             modelBuilder.Entity("AqlanDental.Domain.Entities.Referral", b =>
                 {
                     b.HasOne("AqlanDental.Domain.Entities.Doctor", "FromDoctor")
@@ -3109,6 +4291,35 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.SupplierBill", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.Supplier", "Supplier")
+                        .WithMany("Bills")
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.SupplierBillPayment", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.SupplierBill", "Bill")
+                        .WithMany("Payments")
+                        .HasForeignKey("SupplierBillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AqlanDental.Domain.Entities.Treasury", "Treasury")
+                        .WithMany()
+                        .HasForeignKey("TreasuryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Bill");
+
+                    b.Navigation("Treasury");
                 });
 
             modelBuilder.Entity("AqlanDental.Domain.Entities.SurgeryCase", b =>
@@ -3176,6 +4387,46 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.Navigation("OrthoCase");
                 });
 
+            modelBuilder.Entity("AqlanDental.Domain.Entities.VaultTransfer", b =>
+                {
+                    b.HasOne("AqlanDental.Domain.Entities.CashFlowTransaction", "CashFlowTransaction")
+                        .WithMany()
+                        .HasForeignKey("CashFlowTransactionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.CashierSession", "CashierSession")
+                        .WithMany()
+                        .HasForeignKey("CashierSessionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.Treasury", "DestinationTreasury")
+                        .WithMany()
+                        .HasForeignKey("DestinationTreasuryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AqlanDental.Domain.Entities.JournalEntry", "JournalEntry")
+                        .WithMany()
+                        .HasForeignKey("JournalEntryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AqlanDental.Domain.Entities.Treasury", "SourceTreasury")
+                        .WithMany()
+                        .HasForeignKey("SourceTreasuryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CashFlowTransaction");
+
+                    b.Navigation("CashierSession");
+
+                    b.Navigation("DestinationTreasury");
+
+                    b.Navigation("JournalEntry");
+
+                    b.Navigation("SourceTreasury");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -3229,6 +4480,8 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("AqlanDental.Domain.Entities.ApplicationUser", b =>
                 {
+                    b.Navigation("PasswordResetTokens");
+
                     b.Navigation("RefreshTokens");
                 });
 
@@ -3249,6 +4502,11 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.Navigation("LineItems");
 
                     b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.JournalEntry", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("AqlanDental.Domain.Entities.OrthoCase", b =>
@@ -3279,6 +4537,23 @@ namespace AqlanDental.Infrastructure.Persistence.Migrations
                     b.Navigation("SurgeryCases");
 
                     b.Navigation("TreatmentPlanSteps");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.PurchaseOrder", b =>
+                {
+                    b.Navigation("LineItems");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.Supplier", b =>
+                {
+                    b.Navigation("Bills");
+
+                    b.Navigation("PurchaseOrders");
+                });
+
+            modelBuilder.Entity("AqlanDental.Domain.Entities.SupplierBill", b =>
+                {
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("AqlanDental.Domain.Entities.Treasury", b =>

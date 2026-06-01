@@ -5,6 +5,7 @@ import DashboardLayout from '../../../../components/dashboard/DashboardLayout';
 import PatientDetails from '../../../../components/patients/PatientDetails';
 import AccessDenied from '../../../../components/common/AccessDenied';
 import { useParams } from 'next/navigation';
+import type { UserRole } from '../../../../types/api';
 
 function PatientDetailContent() {
   const { user } = useAuth();
@@ -20,7 +21,7 @@ function PatientDetailContent() {
 
   return (
     <DashboardLayout>
-      <PatientDetails patientId={patientId} canEdit={canEdit} canDelete={canDelete} />
+      <PatientDetails patientId={patientId} canEdit={canEdit} canDelete={canDelete} userRole={user?.role as UserRole} />
     </DashboardLayout>
   );
 }

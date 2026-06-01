@@ -52,6 +52,23 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Referral> Referrals => Set<Referral>();
     public DbSet<Branch> Branches => Set<Branch>();
 
+    // ─── Sprint 21 Entities ──────────────────────────────────────────
+    public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
+    public DbSet<JournalLine> JournalLines => Set<JournalLine>();
+    public DbSet<OperationalExpense> OperationalExpenses => Set<OperationalExpense>();
+    public DbSet<VaultTransfer> VaultTransfers => Set<VaultTransfer>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderLineItem> PurchaseOrderLineItems => Set<PurchaseOrderLineItem>();
+    public DbSet<SupplierBill> SupplierBills => Set<SupplierBill>();
+    public DbSet<SupplierBillPayment> SupplierBillPayments => Set<SupplierBillPayment>();
+    public DbSet<DoctorCommissionPayment> DoctorCommissionPayments => Set<DoctorCommissionPayment>();
+    public DbSet<ClinicalPhoto> ClinicalPhotos => Set<ClinicalPhoto>();
+    public DbSet<Radiograph> Radiographs => Set<Radiograph>();
+    public DbSet<PatientDocument> PatientDocuments => Set<PatientDocument>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -960,6 +977,411 @@ public class AqlanDentalDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.Token).IsUnique();
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.ExpiresAt);
+        });
+
+        // ─── Sprint 21 Entities ──────────────────────────────────────────
+
+        builder.Entity<JournalEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EntryNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.DocumentType).IsRequired();
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.PerformedBy).HasMaxLength(200);
+
+            entity.HasOne(e => e.CashierSession)
+                .WithMany()
+                .HasForeignKey(e => e.CashierSessionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Treasury)
+                .WithMany()
+                .HasForeignKey(e => e.TreasuryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Branch)
+                .WithMany()
+                .HasForeignKey(e => e.BranchId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(e => e.Lines)
+                .WithOne(l => l.JournalEntry)
+                .HasForeignKey(l => l.JournalEntryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.EntryNumber).IsUnique();
+            entity.HasIndex(e => e.DocumentType);
+            entity.HasIndex(e => e.EntryDate);
+            entity.HasIndex(e => e.BranchId);
+            entity.HasIndex(e => e.CashierSessionId);
+            entity.HasIndex(e => e.TreasuryId);
+            entity.HasIndex(e => e.IsPosted);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<JournalLine>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.AccountType).IsRequired();
+            entity.Property(e => e.Debit).HasPrecision(12, 2);
+            entity.Property(e => e.Credit).HasPrecision(12, 2);
+            entity.Property(e => e.Description).HasMaxLength(500);
+
+            entity.HasIndex(e => e.JournalEntryId);
+            entity.HasIndex(e => e.AccountType);
+            entity.HasIndex(e => e.BranchId);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<OperationalExpense>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ExpenseNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Category).IsRequired();
+            entity.Property(e => e.Amount).HasPrecision(12, 2);
+            entity.Property(e => e.PaymentMethod).IsRequired();
+            entity.Property(e => e.SupplierName).HasMaxLength(200);
+            entity.Property(e => e.ReceiptAttachmentUrl).HasMaxLength(500);
+            entity.Property(e => e.ApprovalStatus).IsRequired();
+            entity.Property(e => e.ApprovedBy).HasMaxLength(200);
+            entity.Property(e => e.RejectionReason).HasMaxLength(500);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.CashFlowTransaction)
+                .WithMany()
+                .HasForeignKey(e => e.CashFlowTransactionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.JournalEntry)
+                .WithMany()
+                .HasForeignKey(e => e.JournalEntryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.CashierSession)
+                .WithMany()
+                .HasForeignKey(e => e.CashierSessionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Treasury)
+                .WithMany()
+                .HasForeignKey(e => e.TreasuryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.LabOrder)
+                .WithMany()
+                .HasForeignKey(e => e.LabOrderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.ExpenseNumber).IsUnique();
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.ApprovalStatus);
+            entity.HasIndex(e => e.CashierSessionId);
+            entity.HasIndex(e => e.TreasuryId);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<VaultTransfer>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TransferNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Amount).HasPrecision(12, 2);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.DepositSourceDescription).HasMaxLength(500);
+            entity.Property(e => e.ApprovedBy).HasMaxLength(200);
+            entity.Property(e => e.RejectionReason).HasMaxLength(500);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.SourceTreasury)
+                .WithMany()
+                .HasForeignKey(e => e.SourceTreasuryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.DestinationTreasury)
+                .WithMany()
+                .HasForeignKey(e => e.DestinationTreasuryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.CashierSession)
+                .WithMany()
+                .HasForeignKey(e => e.CashierSessionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.CashFlowTransaction)
+                .WithMany()
+                .HasForeignKey(e => e.CashFlowTransactionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.JournalEntry)
+                .WithMany()
+                .HasForeignKey(e => e.JournalEntryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.TransferNumber).IsUnique();
+            entity.HasIndex(e => e.SourceTreasuryId);
+            entity.HasIndex(e => e.DestinationTreasuryId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CashierSessionId);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserId).HasMaxLength(256);
+            entity.Property(e => e.Action).IsRequired();
+            entity.Property(e => e.Resource).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.IpAddress).HasMaxLength(50);
+            entity.Property(e => e.Details).HasMaxLength(2000);
+            entity.Property(e => e.NewData).HasColumnType("TEXT");
+            entity.Property(e => e.OldData).HasColumnType("TEXT");
+
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Action);
+            entity.HasIndex(e => e.Resource);
+            entity.HasIndex(e => e.ResourceId);
+            entity.HasIndex(e => e.Timestamp);
+        });
+
+        builder.Entity<Supplier>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ContactPerson).HasMaxLength(200);
+            entity.Property(e => e.Phone).HasMaxLength(20);
+            entity.Property(e => e.Email).HasMaxLength(200);
+            entity.Property(e => e.Address).HasMaxLength(500);
+            entity.Property(e => e.Balance).HasPrecision(12, 2);
+
+            entity.HasMany(e => e.PurchaseOrders)
+                .WithOne(po => po.Supplier)
+                .HasForeignKey(po => po.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(e => e.Bills)
+                .WithOne(b => b.Supplier)
+                .HasForeignKey(b => b.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<PurchaseOrder>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OrderNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.Subtotal).HasPrecision(12, 2);
+            entity.Property(e => e.TaxAmount).HasPrecision(12, 2);
+            entity.Property(e => e.TotalAmount).HasPrecision(12, 2);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Supplier)
+                .WithMany(s => s.PurchaseOrders)
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(e => e.LineItems)
+                .WithOne(li => li.PurchaseOrder)
+                .HasForeignKey(li => li.PurchaseOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.OrderNumber).IsUnique();
+            entity.HasIndex(e => e.SupplierId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<PurchaseOrderLineItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ItemName).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.UnitCost).HasPrecision(12, 2);
+            entity.Property(e => e.TotalCost).HasPrecision(12, 2);
+
+            entity.HasOne(e => e.InventoryItem)
+                .WithMany()
+                .HasForeignKey(e => e.InventoryItemId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.PurchaseOrderId);
+            entity.HasIndex(e => e.InventoryItemId);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<SupplierBill>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.BillNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.TotalAmount).HasPrecision(12, 2);
+            entity.Property(e => e.PaidAmount).HasPrecision(12, 2);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Supplier)
+                .WithMany(s => s.Bills)
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(e => e.Payments)
+                .WithOne(p => p.Bill)
+                .HasForeignKey(p => p.SupplierBillId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.BillNumber).IsUnique();
+            entity.HasIndex(e => e.SupplierId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<SupplierBillPayment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Amount).HasPrecision(12, 2);
+            entity.Property(e => e.PaymentMethod).IsRequired();
+            entity.Property(e => e.ReferenceNumber).HasMaxLength(50);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Bill)
+                .WithMany(b => b.Payments)
+                .HasForeignKey(e => e.SupplierBillId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Treasury)
+                .WithMany()
+                .HasForeignKey(e => e.TreasuryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.SupplierBillId);
+            entity.HasIndex(e => e.TreasuryId);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<DoctorCommissionPayment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TotalPrice).HasPrecision(12, 2);
+            entity.Property(e => e.DiscountAmount).HasPrecision(12, 2);
+            entity.Property(e => e.MaterialCost).HasPrecision(12, 2);
+            entity.Property(e => e.LabCost).HasPrecision(12, 2);
+            entity.Property(e => e.NetCommissionable).HasPrecision(12, 2);
+            entity.Property(e => e.CommissionPercentage).HasPrecision(5, 2);
+            entity.Property(e => e.CommissionAmount).HasPrecision(12, 2);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.ApprovedBy).HasMaxLength(200);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.InvoiceLineItem)
+                .WithMany()
+                .HasForeignKey(e => e.InvoiceLineItemId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.CashFlowTransaction)
+                .WithMany()
+                .HasForeignKey(e => e.CashFlowTransactionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.InvoiceLineItemId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<ClinicalPhoto>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileUrl).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.ThumbnailUrl).HasMaxLength(500);
+            entity.Property(e => e.Category).IsRequired();
+            entity.Property(e => e.PhotoType).HasMaxLength(100);
+            entity.Property(e => e.Stage).HasMaxLength(100);
+            entity.Property(e => e.Caption).HasMaxLength(500);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.OrthoCase)
+                .WithMany()
+                .HasForeignKey(e => e.OrthoCaseId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.OrthoCaseId);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<Radiograph>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileUrl).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.XrayType).IsRequired();
+            entity.Property(e => e.FileName).HasMaxLength(300);
+            entity.Property(e => e.MimeType).HasMaxLength(100);
+            entity.Property(e => e.ToothRelated).HasMaxLength(100);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DoctorId);
+            entity.HasIndex(e => e.XrayType);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<PatientDocument>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.DocumentType).IsRequired();
+            entity.Property(e => e.FileUrl).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.FileName).HasMaxLength(300);
+            entity.Property(e => e.MimeType).HasMaxLength(100);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.PatientId);
+            entity.HasIndex(e => e.DocumentType);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        builder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.Type).IsRequired();
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.Message).IsRequired().HasMaxLength(2000);
+            entity.Property(e => e.Link).HasMaxLength(500);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => e.IsRead);
+            entity.HasIndex(e => e.CreatedAt);
         });
 
         SeedDefaultClinicSettings(builder);

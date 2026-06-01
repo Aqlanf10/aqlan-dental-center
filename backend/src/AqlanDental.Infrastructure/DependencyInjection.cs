@@ -66,6 +66,15 @@ public static class DependencyInjection
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IReferralService, ReferralService>();
         services.AddScoped<IBranchService, BranchService>();
+        // ─── Sprint 21 Services ──────────────────────────────────────────
+        services.AddScoped<IJournalEntryService, JournalEntryService>();
+        services.AddScoped<IExpenseService, ExpenseService>();
+        services.AddScoped<IVaultTransferService, VaultTransferService>();
+        services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<ISupplierService, SupplierService>();
+        services.AddScoped<ICommissionService, CommissionService>();
+        services.AddScoped<IClinicalPhotoService, ClinicalPhotoService>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<InitialSeeder>();
 
         return services;

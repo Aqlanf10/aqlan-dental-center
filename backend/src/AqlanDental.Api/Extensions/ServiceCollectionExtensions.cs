@@ -149,7 +149,36 @@ public static class ServiceCollectionExtensions
             .AddPolicy("ReportsRead", policy =>
                 policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
             .AddPolicy("UserManagement", policy =>
-                policy.RequireRole(AppRoles.Admin));
+                policy.RequireRole(AppRoles.Admin))
+            // ─── Sprint 21 Policies ───────────────────────────────────────
+            .AddPolicy("JournalRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("ExpenseRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("ExpenseWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("ExpenseApprove", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("VaultTransferRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("VaultTransferWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("VaultTransferApprove", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("AuditRead", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("SupplierRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("SupplierWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("CommissionRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant, AppRoles.Doctor))
+            .AddPolicy("CommissionWrite", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Accountant))
+            .AddPolicy("CommissionApprove", policy =>
+                policy.RequireRole(AppRoles.Admin))
+            .AddPolicy("NotificationRead", policy =>
+                policy.RequireRole(AppRoles.Admin, AppRoles.Doctor, AppRoles.Reception, AppRoles.Accountant));
 
         services.AddSwaggerGen(c =>
         {
