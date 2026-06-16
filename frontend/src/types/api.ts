@@ -1259,3 +1259,447 @@ export interface CreateBranchRequest {
 export interface UpdateBranchRequest {
   name?: string | null; address?: string | null; phone?: string | null; isMain?: boolean | null;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Sprint 21 — Finance Core, Audit & Dashboard
+// ═══════════════════════════════════════════════════════════════
+
+// --- Operational Expense ---
+export const ExpenseCategoryEnum = {
+  Rent: 0, Utilities: 1, Supplies: 2, Maintenance: 3, Marketing: 4,
+  Insurance: 5, Salaries: 6, Miscellaneous: 7, Other: 99,
+} as const;
+
+export const ExpenseCategoryLabels: Record<number, string> = {
+  0: 'إيجار', 1: 'مرافق', 2: 'مستلزمات', 3: 'صيانة', 4: 'تسويق',
+  5: 'تأمين', 6: 'رواتب', 7: 'متفرقات', 99: 'أخرى',
+};
+
+export const ApprovalStatusEnum = {
+  Pending: 0, Approved: 1, Rejected: 2,
+} as const;
+
+export const ApprovalStatusLabels: Record<number, string> = {
+  0: 'قيد الاعتماد', 1: 'معتمد', 2: 'مرفوض',
+};
+
+export const ApprovalStatusColors: Record<number, string> = {
+  0: 'bg-yellow-100 text-yellow-700',
+  1: 'bg-green-100 text-green-700',
+  2: 'bg-red-100 text-red-700',
+};
+
+export interface OperationalExpenseDto {
+  id: string;
+  expenseNumber: string;
+  category: number;
+  categoryDisplay: string;
+  description: string | null;
+  amount: number;
+  expenseDate: string;
+  paymentMethod: number;
+  paymentMethodDisplay: string;
+  approvalStatus: number;
+  approvalStatusDisplay: string;
+  approvedById: string | null;
+  approvedByName: string | null;
+  approvedAt: string | null;
+  rejectionReason: string | null;
+  notes: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateOperationalExpenseRequest {
+  category: number;
+  description?: string | null;
+  amount: number;
+  expenseDate: string;
+  paymentMethod: number;
+  notes?: string | null;
+}
+
+export interface ApproveExpenseRequest {
+  rejectionReason?: string | null;
+}
+
+// --- Vault Transfer ---
+export const TransferStatusEnum = {
+  Pending: 0, Approved: 1, Rejected: 2, Completed: 3,
+} as const;
+
+export const TransferStatusLabels: Record<number, string> = {
+  0: 'قيد الاعتماد', 1: 'معتمد', 2: 'مرفوض', 3: 'مكتمل',
+};
+
+export const TransferStatusColors: Record<number, string> = {
+  0: 'bg-yellow-100 text-yellow-700',
+  1: 'bg-green-100 text-green-700',
+  2: 'bg-red-100 text-red-700',
+  3: 'bg-blue-100 text-blue-700',
+};
+
+export interface VaultTransferDto {
+  id: string;
+  transferNumber: string;
+  sourceTreasuryId: string;
+  sourceTreasuryName: string;
+  destinationTreasuryId: string;
+  destinationTreasuryName: string;
+  amount: number;
+  transferDate: string;
+  status: number;
+  statusDisplay: string;
+  approvedById: string | null;
+  approvedByName: string | null;
+  approvedAt: string | null;
+  rejectionReason: string | null;
+  notes: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateVaultTransferRequest {
+  sourceTreasuryId: string;
+  destinationTreasuryId: string;
+  amount: number;
+  transferDate: string;
+  notes?: string | null;
+}
+
+// --- Journal Entry ---
+export const JournalDocumentTypeEnum = {
+  Payment: 0, Invoice: 1, Expense: 2, Transfer: 3, Manual: 4, Commission: 5, Other: 99,
+} as const;
+
+export const JournalDocumentTypeLabels: Record<number, string> = {
+  0: 'دفعة', 1: 'فاتورة', 2: 'مصروف', 3: 'تحويل', 4: 'يدوي', 5: 'عمولة', 99: 'أخرى',
+};
+
+export interface JournalLineDto {
+  id: string;
+  journalEntryId: string;
+  accountCode: string;
+  accountName: string;
+  debit: number;
+  credit: number;
+  description: string | null;
+}
+
+export interface JournalEntryDto {
+  id: string;
+  entryNumber: string;
+  documentType: number;
+  documentTypeDisplay: string;
+  documentReferenceId: string | null;
+  description: string | null;
+  entryDate: string;
+  totalDebit: number;
+  totalCredit: number;
+  isReversal: boolean;
+  reversedByEntryId: string | null;
+  lines: JournalLineDto[];
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- Supplier ---
+export interface SupplierDto {
+  id: string;
+  supplierNumber: string;
+  name: string;
+  contactPerson: string | null;
+  phoneNumber: string | null;
+  email: string | null;
+  address: string | null;
+  taxNumber: string | null;
+  notes: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSupplierRequest {
+  name: string;
+  contactPerson?: string | null;
+  phoneNumber?: string | null;
+  email?: string | null;
+  address?: string | null;
+  taxNumber?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateSupplierRequest {
+  name?: string | null;
+  contactPerson?: string | null;
+  phoneNumber?: string | null;
+  email?: string | null;
+  address?: string | null;
+  taxNumber?: string | null;
+  notes?: string | null;
+}
+
+// --- Purchase Order ---
+export const PurchaseOrderStatusEnum = {
+  Draft: 0, Sent: 1, PartiallyReceived: 2, Received: 3, Cancelled: 4,
+} as const;
+
+export const PurchaseOrderStatusLabels: Record<number, string> = {
+  0: 'مسودة', 1: 'مرسل', 2: 'مستلم جزئيًا', 3: 'مستلم', 4: 'ملغي',
+};
+
+export interface PurchaseOrderDto {
+  id: string;
+  poNumber: string;
+  supplierId: string;
+  supplierName: string;
+  orderDate: string;
+  expectedDate: string | null;
+  totalAmount: number;
+  status: number;
+  statusDisplay: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePurchaseOrderRequest {
+  supplierId: string;
+  orderDate: string;
+  expectedDate?: string | null;
+  notes?: string | null;
+  items?: CreatePurchaseOrderLineRequest[];
+}
+
+export interface CreatePurchaseOrderLineRequest {
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+// --- Supplier Bill ---
+export const SupplierBillStatusEnum = {
+  Pending: 0, Paid: 1, PartiallyPaid: 2, Overdue: 3,
+} as const;
+
+export const SupplierBillStatusLabels: Record<number, string> = {
+  0: 'قيد الانتظار', 1: 'مدفوعة', 2: 'مدفوعة جزئيًا', 3: 'متأخرة',
+};
+
+export const SupplierBillStatusColors: Record<number, string> = {
+  0: 'bg-yellow-100 text-yellow-700',
+  1: 'bg-green-100 text-green-700',
+  2: 'bg-blue-100 text-blue-700',
+  3: 'bg-red-100 text-red-700',
+};
+
+export interface SupplierBillDto {
+  id: string;
+  billNumber: string;
+  supplierId: string;
+  supplierName: string;
+  purchaseOrderId: string | null;
+  billDate: string;
+  dueDate: string | null;
+  totalAmount: number;
+  paidAmount: number;
+  status: number;
+  statusDisplay: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSupplierBillRequest {
+  supplierId: string;
+  purchaseOrderId?: string | null;
+  billDate: string;
+  dueDate?: string | null;
+  totalAmount: number;
+  notes?: string | null;
+}
+
+// --- Doctor Commission ---
+export const CommissionStatusEnum = {
+  Pending: 0, Approved: 1, Paid: 2, Cancelled: 3,
+} as const;
+
+export const CommissionStatusLabels: Record<number, string> = {
+  0: 'قيد الانتظار', 1: 'معتمد', 2: 'مدفوعة', 3: 'ملغاة',
+};
+
+export const CommissionStatusColors: Record<number, string> = {
+  0: 'bg-yellow-100 text-yellow-700',
+  1: 'bg-green-100 text-green-700',
+  2: 'bg-blue-100 text-blue-700',
+  3: 'bg-red-100 text-red-700',
+};
+
+export interface DoctorCommissionPaymentDto {
+  id: string;
+  doctorId: string;
+  doctorName: string;
+  invoiceLineItemId: string | null;
+  serviceNameSnapshot: string | null;
+  invoiceNumber: string | null;
+  patientName: string | null;
+  commissionAmount: number;
+  commissionPercentage: number;
+  status: number;
+  statusDisplay: string;
+  paidAt: string | null;
+  paymentMethod: number | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApproveCommissionRequest {
+  commissionIds: string[];
+}
+
+export interface PayCommissionRequest {
+  commissionIds: string[];
+  paymentMethod: number;
+  notes?: string | null;
+}
+
+// --- Audit Log ---
+export interface AuditLogDto {
+  id: string;
+  timestamp: string;
+  userId: string;
+  userName: string;
+  action: string;
+  resource: string;
+  resourceId: string | null;
+  details: string | null;
+  ipAddress: string | null;
+}
+
+// --- Clinical Photos ---
+export const ClinicalPhotoCategoryEnum = {
+  Intraoral: 0, Extraoral: 1, Portrait: 2, StudyModel: 3,
+} as const;
+
+export const ClinicalPhotoCategoryLabels: Record<number, string> = {
+  0: 'داخل الفم', 1: 'خارج الفم', 2: 'صورة شخصية', 3: 'نموذج دراسي',
+};
+
+export interface ClinicalPhotoDto {
+  id: string;
+  patientId: string;
+  category: number;
+  categoryDisplay: string;
+  filePath: string;
+  fileName: string;
+  thumbnailPath: string | null;
+  description: string | null;
+  takenDate: string;
+  doctorId: string | null;
+  doctorName: string | null;
+  createdAt: string;
+}
+
+export interface UploadClinicalPhotoRequest {
+  category: number;
+  description?: string | null;
+  takenDate?: string | null;
+  doctorId?: string | null;
+}
+
+// --- Radiographs ---
+export const XrayTypeEnum = {
+  Periapical: 0, Bitewing: 1, Panoramic: 2, Cephalometric: 3, CBCT: 4, Other: 99,
+} as const;
+
+export const XrayTypeLabels: Record<number, string> = {
+  0: 'محيطية', 1: 'عضاضة', 2: 'بانوراما', 3: 'رأسية', 4: 'CBCT', 99: 'أخرى',
+};
+
+export interface RadiographDto {
+  id: string;
+  patientId: string;
+  xrayType: number;
+  xrayTypeDisplay: string;
+  filePath: string;
+  fileName: string;
+  thumbnailPath: string | null;
+  description: string | null;
+  takenDate: string;
+  labName: string | null;
+  doctorId: string | null;
+  doctorName: string | null;
+  createdAt: string;
+}
+
+export interface UploadRadiographRequest {
+  xrayType: number;
+  description?: string | null;
+  takenDate?: string | null;
+  labName?: string | null;
+  doctorId?: string | null;
+}
+
+// --- Patient Documents ---
+export const DocumentTypeEnum = {
+  ID: 0, Insurance: 1, Consent: 2, Referral: 3, Report: 4, Other: 99,
+} as const;
+
+export const DocumentTypeLabels: Record<number, string> = {
+  0: 'هوية', 1: 'تأمين', 2: 'موافقة', 3: 'إحالة', 4: 'تقرير', 99: 'أخرى',
+};
+
+export interface PatientDocumentDto {
+  id: string;
+  patientId: string;
+  documentType: number;
+  documentTypeDisplay: string;
+  title: string;
+  filePath: string;
+  fileName: string;
+  description: string | null;
+  isSigned: boolean;
+  signedAt: string | null;
+  signedBy: string | null;
+  uploadedAt: string;
+  createdAt: string;
+}
+
+export interface UploadPatientDocumentRequest {
+  documentType: number;
+  title: string;
+  description?: string | null;
+}
+
+// --- Notifications ---
+export interface NotificationDto {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  resourceType: string | null;
+  resourceId: string | null;
+  createdAt: string;
+}
+
+export interface MarkNotificationReadRequest {
+  notificationIds: string[];
+}
+
+// --- Admin Dashboard Stats ---
+export interface AdminDashboardStatsDto {
+  totalPatients: number;
+  todayAppointments: number;
+  revenueMTD: number;
+  pendingQueueItems: number;
+  overdueContracts: number;
+  activeOrthoCases: number;
+  unpaidSupplierBills: number;
+  pendingCommissions: number;
+}

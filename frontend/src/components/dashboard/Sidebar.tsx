@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Logo from '../Logo';
 import { useAuth } from '../auth/AuthContext';
 
@@ -9,6 +10,7 @@ interface NavItem {
   href?: string;
   enabled: boolean;
   roles?: string[]; // if undefined, visible to all roles; if defined, only those roles
+  badgeKey?: string; // key for unread badge count (e.g., 'notifications')
 }
 
 const navItems: NavItem[] = [
@@ -78,6 +80,34 @@ const navItems: NavItem[] = [
     roles: ['Admin', 'Accountant'],
   },
   {
+    label: 'المصروفات',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />,
+    href: '/dashboard/expenses',
+    enabled: true,
+    roles: ['Admin', 'Accountant'],
+  },
+  {
+    label: 'تحويلات الخزينة',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />,
+    href: '/dashboard/vault-transfers',
+    enabled: true,
+    roles: ['Admin', 'Accountant'],
+  },
+  {
+    label: 'القيود المحاسبية',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />,
+    href: '/dashboard/journal',
+    enabled: true,
+    roles: ['Admin', 'Accountant'],
+  },
+  {
+    label: 'عمولات الأطباء',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />,
+    href: '/dashboard/commissions',
+    enabled: true,
+    roles: ['Admin', 'Accountant'],
+  },
+  {
     label: 'طب الأسنان العام',
     icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />,
     href: '/dashboard/general',
@@ -106,6 +136,13 @@ const navItems: NavItem[] = [
     roles: ['Admin', 'Doctor', 'Reception'],
   },
   {
+    label: 'الموردين',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />,
+    href: '/dashboard/suppliers',
+    enabled: true,
+    roles: ['Admin', 'Accountant'],
+  },
+  {
     label: 'المخزون',
     icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />,
     href: '/dashboard/inventory',
@@ -132,6 +169,20 @@ const navItems: NavItem[] = [
     href: '/dashboard/referrals',
     enabled: true,
     roles: ['Admin', 'Doctor'],
+  },
+  {
+    label: 'سجل التدقيق',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />,
+    href: '/dashboard/audit-logs',
+    enabled: true,
+    roles: ['Admin'],
+  },
+  {
+    label: 'الإشعارات',
+    icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />,
+    href: '/dashboard/notifications',
+    enabled: true,
+    badgeKey: 'notifications',
   },
   {
     label: 'الرسائل',
@@ -166,6 +217,28 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { logout, user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/notifications?pageSize=1&isRead=false`, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCount(data.totalCount ?? 0);
+        }
+      } catch {
+        // silent
+      }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const userRole = user?.role || '';
   const isItemVisible = (item: NavItem) => {
@@ -205,6 +278,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       {item.icon}
                     </svg>
                     <span>{item.label}</span>
+                    {item.badgeKey === 'notifications' && unreadCount > 0 && (
+                      <span className="mr-auto rounded-full bg-[#f5922e] px-2 py-0.5 text-[10px] font-bold text-white">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </a>
                 ) : (
                   <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm opacity-50 cursor-not-allowed">
