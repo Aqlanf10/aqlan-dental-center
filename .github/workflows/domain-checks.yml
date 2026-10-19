@@ -22,7 +22,9 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
-      - name: Check JavaScript syntax
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Strict TypeScript and syntax checks
         run: npm run check
       - name: Run synthetic domain tests
         run: npm test

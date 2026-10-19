@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createClinicalRecord, executeClinical, isFdiTooth, validateServiceTarget } from '../../src/clinical/index.js';
+import { createClinicalRecord, executeClinical, isFdiTooth, validateServiceTarget } from '../../src/clinical/index.ts';
 
 const identity = { persons: [{ personId: 'person-1', displayName: 'Synthetic Person' }, { personId: 'person-2', displayName: 'Synthetic Person' }] };
 const empty = () => createClinicalRecord({ patientId: 'patient-1', personId: 'person-1', clinicId: 'clinic-1' }, identity);

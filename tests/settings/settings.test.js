@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptySettings, updateSettings, settingsAt, publicSettings, settingsAudit, resolveLanguage, SETTING_DEFINITIONS, FIXED_INVARIANTS } from '../../src/settings/index.js';
+import { emptySettings, updateSettings, settingsAt, publicSettings, settingsAudit, resolveLanguage, SETTING_DEFINITIONS, FIXED_INVARIANTS } from '../../src/settings/index.ts';
 const at = '2026-06-01T00:00:00Z', future = '2026-07-01T00:00:00Z';
 const empty = () => emptySettings({ scope: 'clinic', scopeId: 'clinic1' });
 const command = overrides => ({ expectedVersion: 0, patch: {}, effectiveAt: at, recordedAt: at, actorId: 'owner-user', reason: 'Synthetic test setup', sourceId: 'source1', ...overrides });

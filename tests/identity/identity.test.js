@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyIdentityRegistry, registerPerson, attachProfile, defineGrant, evaluatePermission, delegatePermission, revokeGrant } from '../../src/identity/index.js';
+import { emptyIdentityRegistry, registerPerson, attachProfile, defineGrant, evaluatePermission, delegatePermission, revokeGrant } from '../../src/identity/index.ts';
 const start = '2026-01-01T00:00:00Z', at = '2026-06-01T00:00:00Z', end = '2027-01-01T00:00:00Z';
 const scope = { clinicId: 'clinic1', branchIds: ['branch1'] };
 const grant = overrides => defineGrant({ grantId: 'g1', subjectId: 'owner-user', action: 'read', resource: 'chart', effect: 'allow', scope, startsAt: start, expiresAt: end, canDelegate: true, ...overrides });
