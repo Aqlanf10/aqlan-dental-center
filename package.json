@@ -8,12 +8,18 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "test": "node --test tests/finance/*.test.js tests/identity/*.test.js tests/settings/*.test.js tests/clinical/*.test.js tests/i18n/*.test.js",
+    "test": "node --test tests/finance/*.test.js tests/identity/*.test.js tests/settings/*.test.js tests/clinical/*.test.js tests/i18n/*.test.js tests/api/*.test.ts",
+    "test:domain": "node --test tests/finance/*.test.js tests/identity/*.test.js tests/settings/*.test.js tests/clinical/*.test.js tests/i18n/*.test.js",
+    "test:postgres": "node --test tests/postgres/finance.test.ts",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && node scripts/check-syntax.js"
   },
+  "dependencies": {
+    "pg": "8.23.1"
+  },
   "devDependencies": {
     "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
     "typescript": "7.0.2"
   }
 }

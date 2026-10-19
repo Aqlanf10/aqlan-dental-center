@@ -17,6 +17,8 @@
   },
   "include": [
     "src/**/*.ts",
-    "tests/types/**/*.ts"
+    "tests/types/**/*.ts",
+    "tests/postgres/**/*.ts",
+    "tests/api/**/*.ts"
   ]
 }
