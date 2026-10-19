@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CURRENCIES, parseMoney, convertMinor, roundRatio, units } from '../../src/finance/money.js';
-import { createAccount, execute, obligationBalance, receiptBalance } from '../../src/finance/account.js';
+import { CURRENCIES, parseMoney, convertMinor, roundRatio, units } from '../../src/finance/money.ts';
+import { createAccount, execute, obligationBalance, receiptBalance } from '../../src/finance/account.ts';
 const day = '2026-10-19';
 const fresh = () => createAccount({ id: 'account-1', patientId: 'patient-1', entityId: 'entity-1' });
 const cmd = (s, type, payload, key = `command-${s.version}`) => ({ key, expectedVersion: s.version, actorId: 'synthetic-actor', reason: 'Synthetic test', onDate: day, type, payload });

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CURRENCIES } from '../../src/finance/money.js';
-import { CATALOGS, MESSAGE_KEYS, validateCatalogs, translate, direction, presentIdentifier, presentMoney, presentInstant, originalClinicalText, presentError } from '../../src/i18n/index.js';
+import { CURRENCIES } from '../../src/finance/money.ts';
+import { CATALOGS, MESSAGE_KEYS, validateCatalogs, translate, direction, presentIdentifier, presentMoney, presentInstant, originalClinicalText, presentError } from '../../src/i18n/index.ts';
 
 test('catalog parity, complete in-scope messages, and distinct refund/reversal actions', () => {
   assert.equal(validateCatalogs(CATALOGS), true);

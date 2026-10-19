@@ -1,5 +1,5 @@
 /** Presentation vocabulary only. Codes remain stable; labels are never record keys. */
-const entries = {
+const entries: Record<string, [string, string]> = {
   'status.DRAFT': ['Draft', 'مسودة'],
   'status.APPROVED': ['Approved', 'معتمد'],
   'status.OPEN': ['Open', 'مفتوح'],
@@ -52,6 +52,7 @@ const entries = {
   'error.SUPPORT': ['The action could not be completed. Support reference: {reference}', 'تعذر إكمال الإجراء. مرجع الدعم: {reference}'],
 };
 export const MESSAGE_KEYS = Object.freeze(Object.keys(entries));
-export const CATALOGS = Object.freeze(Object.fromEntries(['en', 'ar'].map((language, index) => [language,
-  Object.freeze(Object.fromEntries(Object.entries(entries).map(([key, values]) => [key, values[index]])))
-])));
+function catalog(index: 0 | 1): Readonly<Record<string, string>> {
+  return Object.freeze(Object.fromEntries(Object.entries(entries).map(([key, values]) => [key, values[index]])));
+}
+export const CATALOGS = Object.freeze({ en: catalog(0), ar: catalog(1) });

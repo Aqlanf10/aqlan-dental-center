@@ -16,4 +16,4 @@ async function inspect(directory) {
   }
 }
 for (const directory of ['src', 'tests', 'scripts']) await inspect(directory);
-console.log('JavaScript syntax checks passed. This is not a typecheck.');
+console.log('JavaScript test/script syntax checks passed; TypeScript is checked separately by tsc.');
