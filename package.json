@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Aqlan Dental Center \u2014 isolated domain foundation, not a production clinic application",
+  "description": "Aqlan Dental Center — isolated vertical clinic system (Slice 1 + Owner Governance)",
   "engines": {
     "node": ">=24 <25"
   },
@@ -11,6 +11,8 @@
     "test": "node --test tests/finance/*.test.js tests/identity/*.test.js tests/settings/*.test.js tests/clinical/*.test.js tests/i18n/*.test.js tests/api/*.test.ts",
     "test:domain": "node --test tests/finance/*.test.js tests/identity/*.test.js tests/settings/*.test.js tests/clinical/*.test.js tests/i18n/*.test.js",
     "test:postgres": "node --test tests/postgres/finance.test.ts",
+    "test:slice1": "node --test tests/postgres/slice1.test.ts",
+    "start": "node src/server/main.ts",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && node scripts/check-syntax.js"
   },
